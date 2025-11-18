@@ -1,0 +1,30 @@
+{
+  "name": "web_app_starter",
+  "version": "1.0.0",
+  "description": "This is an example node javascript web app using express",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ischooluw/web_app_starter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ischooluw/web_app_starter/issues"
+  },
+  "homepage": "https://github.com/ischooluw/web_app_starter#readme",
+  "dependencies": {
+    "@azure/msal-node": "^3.8.2",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "morgan": "^1.10.1",
+    "msal-node-wrapper": "https://gitpkg.now.sh/kylethayer/ms-identity-javascript-nodejs-tutorial-msal-node-v2-/Common/msal-node-wrapper?main"
+  }
+}
