@@ -3,6 +3,7 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import sessions from 'express-session'
+import models from './models.js';
 
 import WebAppAuthProvider from 'msal-node-wrapper'
 import dotenv from 'dotenv';
@@ -49,6 +50,11 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const oneDay = 1000 * 60 * 60 * 24
+app.use((req, res, next) => {
+    req.models = models;
+    next();
+});
+
 app.use(sessions({
     secret: process.env.EXPRESS_SESSION_SECRET,
     saveUninitialized: true,
