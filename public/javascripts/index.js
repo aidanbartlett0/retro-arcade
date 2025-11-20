@@ -1,3 +1,5 @@
+// import e = require("express");
+
 async function init(){
     userState()
 }
@@ -30,8 +32,8 @@ const grid = 15;
 const paddleHeight = grid * 5; // 80
 const maxPaddleY = canvas.height - grid - paddleHeight;
 
-var paddleSpeed = 6;
-var ballSpeed = 2;
+var paddleSpeed = 15;
+var ballSpeed = 5;
 
 const leftPaddle = {
   // start in the middle of the game on the left side
@@ -209,15 +211,39 @@ async function paddleCollision(paddle_side){
         "Content-Type": "application/json"
     },
     body: JSON.stringify({ paddle_side })
-})
+  })
 }
 
 async function score(paddle_side){
-  let responseJson = await fetch(`api/v1/game/score`, {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ paddle_side })
-})
+  try{
+    let responseJson = await fetch(`api/v1/game/score`, {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ paddle_side })
+    })
+    updateScore()
+  }catch(error){
+    console.log(error)
+  }
+}
+
+async function updateScore(){
+  try{
+    let responseJson = await fetch(`api/v1/game/getScore`, {
+      method: "GET"
+    })
+    let scores = await responseJson.json();
+    console.log(scores);
+    console.log(scores['left'])
+    console.log(scores.left)
+    let rightScore = document.getElementById('player-right-score')
+    let leftScore = document.getElementById('player-left-score')
+    rightScore.innerText = scores.right
+    leftScore.innerText = scores.left
+
+  }catch(error){
+    console.log(error)
+  }
 }

@@ -11,16 +11,29 @@
   <div class="top-bar">
     <button onclick="login()" id="login">Login</button>
     <button onclick="logout()" id="logout">Logout</button>
-    <p id="userState"></p>
-    <p id="hitCounter"></p>
+    <p id="userState"></p>    
+  </div>
+  <div id="scoreboard" class="scoreboard" aria-label="Game scoreboard">
+    <div class="scoreboard-left">
+      <div class="player-name" id="player-left-name">PLAYER 1</div>
+      <div class="player-score" id="player-left-score" role="status" aria-live="polite">0</div>
+    </div>
+  
+    <div class="scoreboard-center">
+      <div class="match-info" id="match-info">ROUND 1</div>
+      <div class="separator">:</div>
+      <div class="timer" id="match-timer">00:00</div>
+    </div>
+  
+    <div class="scoreboard-right">
+      <div class="player-name" id="player-right-name">PLAYER 2</div>
+      <div class="player-score" id="player-right-score" role="status" aria-live="polite">0</div>
+    </div>
   </div>
 
   <div class="game-container">
     <canvas width="750" height="585" id="game"></canvas>
   </div>
-
-  <h1>Pong</h1>
-
 </body>
 
 </html>

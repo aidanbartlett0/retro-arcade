@@ -74,3 +74,147 @@ login {
   border: 1px black solid;
   margin: 3px;
 }
+
+
+/* scoreboard.css - retro / arcade style */
+:root{
+  --bg: #0b0f1a;
+  --panel: rgba(255,255,255,0.04);
+  --accent: #00f0ff;
+  --accent-2: #ff5dd9;
+  --text: #e7f0ff;
+  --muted: #9fb0c8;
+  --glow: 0 0 10px rgba(0,240,255,0.12), 0 0 30px rgba(255,93,217,0.06);
+  --font-stack: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+}
+
+/* Scoreboard wrapper */
+.scoreboard{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  width: 100%;
+  max-width: 920px;
+  margin: 16px auto;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 2px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  box-shadow: var(--glow);
+  color: var(--text);
+  font-family: var(--font-stack);
+  box-sizing: border-box;
+}
+
+/* Left / Right player panes */
+.scoreboard-left,
+.scoreboard-right{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 30%;
+  min-width: 140px;
+  padding: 10px;
+  /* background: linear-gradient(135deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); */
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Player name (small uppercase) */
+.player-name{
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* Player score big, retro mono feel */
+.player-score{
+  font-family: var(--mono);
+  font-size: 52px;
+  line-height: 1;
+  /* color: var(--text); */
+  color: black;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+  box-shadow: inset 0 -6px 18px rgba(0,0,0,0.45);
+  min-width: 90px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Center area with round/timer */
+.scoreboard-center{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 30%;
+  min-width: 160px;
+  padding: 10px;
+  text-align: center;
+  flex-direction: column;
+}
+
+/* Match info (round) */
+.match-info{
+  font-family: var(--font-stack);
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* stylized separator (large colon) */
+.separator{
+  font-family: var(--mono);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0,240,255,0.12);
+}
+
+/* Timer */
+.timer{
+  font-family: var(--mono);
+  font-size: 20px;
+  color: var(--accent-2);
+  background: rgba(255,255,255,0.02);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+
+/* Small screens: stack */
+@media (max-width: 640px){
+  .scoreboard{
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+  .scoreboard-left,
+  .scoreboard-right,
+  .scoreboard-center{
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+  }
+  .player-score{
+    font-size: 36px;
+    min-width: 64px;
+  }
+  .separator{
+    display: none;
+  }
+}
