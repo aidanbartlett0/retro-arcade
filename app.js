@@ -18,9 +18,10 @@ const authConfig = {
         // clientId: "{App Registration -> Overview: Application (Client) ID}",
         // authority: "https://login.microsoftonline.com/{App Registration -> Overview: Directory (tenant) ID}",
         // clientSecret: "{App Registration -> Certificates and Secrets -> Client Secrets: Value}",
-        redirectUri: "/redirect"
+        redirectUri: "https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/redirect"
         // The redirect needs to be the correct URL that is getting pointed to by "/". When running locally, you just need "/redirect", but when running in azure through an external domain name, it needs to be "https://custom.domain/redirect"
         // The redirects need to be registered with Azrue App Registrations -> Authentication -> Redirect URI
+        // https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/redirect
     },
 	system: {
     	loggerOptions: {
