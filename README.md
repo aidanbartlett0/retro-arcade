@@ -1,6 +1,4 @@
-# 🎮 Retro Arcade
-
-![Add a project image here](./images/banner.png)
+# Retro Arcade
 
 ## Overview
 
@@ -12,19 +10,19 @@ As developers, we’re excited to build an interactive online game that encourag
 
 ---
 
-## 🧰 Technical Description
+## Technical Description
 
 ![Add technical diagram here](./images/tech_diagram.png)
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ![Add your database schema diagram here](./images/db_schema.png)
 
 ---
 
-## 👤 User Stories
+## User Stories
 
 | Priority | User | Description | Technical Implementation |
 |---------|------|-------------|---------------------------|
@@ -46,7 +44,7 @@ As developers, we’re excited to build an interactive online game that encourag
 
 ---
 
-## 🔌 Possible Endpoints
+## Possible Endpoints
 
 ### **Authentication & Session Management**
 - `POST /users` — Create a user account  
