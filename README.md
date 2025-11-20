@@ -8,6 +8,8 @@ This application is built for students and workers who need a quick break betwee
 
 As developers, we’re excited to build an interactive online game that encourages quick bursts of fun and competition. This project also gives us the opportunity to learn new technologies such as game/state management and real-time interactivity using websockets.
 
+Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/](https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/)
+
 ---
 
 ## Technical Description
