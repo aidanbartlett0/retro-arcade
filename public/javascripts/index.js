@@ -123,7 +123,11 @@ function loop() {
   // reset ball if it goes past paddle (but only if we haven't already done so)
   if ( (ball.x < 0 || ball.x > canvas.width) && !ball.resetting) {
     ball.resetting = true;
-
+    if (ball.dx > 0){
+      score('left')
+    } else{
+      score('right')
+    }
     // give some time for the player to recover before launching the ball again
     setTimeout(() => {
       ball.resetting = false;
@@ -135,14 +139,14 @@ function loop() {
   // check to see if ball collides with paddle. if they do change x velocity
   if (collides(ball, leftPaddle)) {
     ball.dx *= -1;
-
+    paddleCollision('left')
     // move ball next to the paddle otherwise the collision will happen again
     // in the next frame
     ball.x = leftPaddle.x + leftPaddle.width;
   }
   else if (collides(ball, rightPaddle)) {
     ball.dx *= -1;
-
+    paddleCollision('right')
     // move ball next to the paddle otherwise the collision will happen again
     // in the next frame
     ball.x = rightPaddle.x - ball.width;
@@ -197,3 +201,23 @@ document.addEventListener('keyup', function(e) {
 
 // start the game
 requestAnimationFrame(loop);
+
+async function paddleCollision(paddle_side){
+  let responseJson = await fetch(`api/v1/game/collision`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ paddle_side })
+})
+}
+
+async function score(paddle_side){
+  let responseJson = await fetch(`api/v1/game/score`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ paddle_side })
+})
+}

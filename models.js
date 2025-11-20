@@ -12,9 +12,7 @@ async function main() {
   
   const DB_PASSWORD = process.env.DB_PASSWORD || '';
   const MONGODB_URI = `mongodb+srv://info441retroarcade_db_user:${DB_PASSWORD}@retroarcadepong.26d8swo.mongodb.net/?appName=retroarcadepong`;
-  
   await mongoose.connect(MONGODB_URI);
-  
   console.log('successfully connected to mongodb!');
 }
 
