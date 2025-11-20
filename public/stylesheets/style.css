@@ -1,6 +1,31 @@
 body {
+  background: beige;
   padding: 0 50px 0 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  min-height: 100vh; /* Ensure body takes full viewport height */
+  margin: 0;
+  display: flex; /* Use flexbox for overall layout */
+  flex-direction: column; /* Stack children vertically */
+  align-items: center; /* Center horizontally */
+}
+
+.top-bar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end; /* Align items to the right */
+  align-items: center;
+  padding: 10px 0;
+  gap: 10px; /* Space between items */
+  position: absolute;
+  top: 0;
+  padding-right: 50px;
+}
+
+.game-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1; /* Allow it to take up available space */
 }
 
 nav.navbar {
@@ -10,11 +35,16 @@ nav.navbar {
 }
 
 h1{
+  
   margin-top: 70px;
 }
 
 a {
   color: #00B7FF;
+}
+
+login {
+  top: 0
 }
 
 #posts_box{

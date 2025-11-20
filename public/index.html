@@ -1,17 +1,25 @@
 <html>
 
 <head>
-  <title>Starter App</title>
   <link rel="stylesheet" href="stylesheets/style.css">
-  <script src="javascripts/index.js"></script>
+  <script src="javascripts/index.js" defer></script>
+
 </head>
 
 <body onload="init()">
-  <h1>Express App Starter Code</h1>
-  <p id="userState"></p>
 
-  <button onclick="login()" id="login">Login</button>
-  <button onclick="logout()" id="logout">Logout</button>
+  <div class="top-bar">
+    <button onclick="login()" id="login">Login</button>
+    <button onclick="logout()" id="logout">Logout</button>
+    <p id="userState"></p>
+  </div>
+
+  <div class="game-container">
+    <canvas width="750" height="585" id="game"></canvas>
+  </div>
+
+  <h1>Pong</h1>
+
 </body>
 
 </html>
