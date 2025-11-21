@@ -48,7 +48,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 const oneDay = 1000 * 60 * 60 * 24
 app.use((req, res, next) => {
@@ -67,6 +66,14 @@ const authProvider = await WebAppAuthProvider.WebAppAuthProvider.initialize(auth
 app.use(authProvider.authenticate());
 
 app.use('/api/v1', apiRouter);
+
+// Route handler for home page - must come before static middleware
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
+});
+
+// Static middleware - serves other static files (but won't override the '/' route)
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/signin', (req, res, next) => {
     return req.authContext.login({

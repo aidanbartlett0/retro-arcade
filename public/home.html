@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="stylesheets/style.css">
+        <script src="javascripts/home.js" defer></script>
+        <title>Retro Arcade - Home</title>
+      </head>
+      <body class="home-page">
+        <div class="top-bar">
+            <button onclick="login()" id="login-btn" class="auth-button">Login</button>
+            <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
+            <div id="user-info" class="user-info"></div>    
+        </div>
+        
+        <div class="container">
+            <h1>Retro Arcade Pong</h1>
+            
+            <nav class="menu">
+                <button onclick="startGame()" class="menu-button" id="start-game-btn">Start Game</button>
+                <button onclick="viewFriends()" class="menu-button" id="friends-btn">Friends</button>
+                <button onclick="viewMatchHistory()" class="menu-button" id="match-history-btn">Match History</button>
+            </nav>
+    
+            <div class="footer">
+                <p>Classic Pong Game</p>
+            </div>
+        </div>
+      </body>
+</html>
