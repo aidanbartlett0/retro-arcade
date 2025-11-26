@@ -16,4 +16,42 @@ async function main() {
   console.log('successfully connected to mongodb!');
 }
 
+
+const matchSchema = new mongoose.Schema({
+  player1: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  player2: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  score: {
+    player1: { type: Number, default: 0 },
+    player2: { type: Number, default: 0 }
+  },
+  winner: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  date: Date
+})
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  email: String,
+  firstName: String,
+  lastName: String,
+  matchHistory: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Match'
+  }]
+})
+
+models.User = mongoose.model('User', userSchema)
+console.log('mongoose userSchema created')
+models.Match = mongoose.model('Match', userSchema)
+console.log('mongoose matchSchema created')
+
+
 export default models;

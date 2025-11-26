@@ -22,7 +22,7 @@ async function userState(){
         logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
         
         if (isLoggedIn) {
-            const userName = userjson.userInfo.name || userjson.userInfo.username || 'Player';
+            const userName = userjson.userInfo.username ;
             userInfo.innerHTML = `<span class="user-name">Welcome, ${userName}!</span>`;
             userInfo.style.display = 'block';
         } else {
@@ -46,9 +46,35 @@ function viewFriends() {
     // window.location.href = '/friends.html';
 }
 
-function viewMatchHistory() {
-    alert('Match History feature coming soon!');
-    // window.location.href = '/match-history.html';
+async function viewMatchHistory() {
+    const response = await fetch('/api/v1/users/whoami');
+    const userjson = await response.json();
+    if (userjson.status === 'loggedin'){
+        window.location.href = '/match-history.html';
+    }
+    else{
+        alert('You must log in first!')
+    }
+}
+
+async function load_matches(){
+    try{
+        let response = await fetch('/api/v1/users/whoami');
+        const userjson = await response.json();
+        const username = userjson.userInfo.username
+    
+        response = await fetch(`/api/v1/matches/history`)
+        const matchjson = await response.json();
+        console.log('match history:', matchjson);  
+        let history = document.getElementById('match_history') 
+        history.innerTEXT = matchjson;
+    } catch(error){
+        let history = document.getElementById('match_history') 
+        history.innerTEXT = 'No games yet';
+        console.log({error: error})
+        alert(error)
+    }
+
 }
 
 window.addEventListener('DOMContentLoaded', () => {

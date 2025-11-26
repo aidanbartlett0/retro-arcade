@@ -22,20 +22,50 @@ router.post('/start', async function(req, res, next){
     }
 })
 
-
+// add the logic to "log in" the evil player and create a fake dynamo user
 router.post('/stop', async function(req, res, next){
     try{
         if(req.session.game.playing){
-            console.log('game stopped')
-            if (req.session.game.scores['left'] > req.session.game.scores['right']){
-                return res.status(200).json({status: 'game ended', winner: req.session.game.players['left']})
+            const leftScore = req.session.game.scores['left'];
+            const rightScore = req.session.game.scores['right'];
+            const leftPlayer = req.session.game.players['left'];
+            const rightPlayer = req.session.game.players['right'];
+                                
+            const leftUser = await req.models.User.findOne({ username: leftPlayer });
+            const rightUser = await req.models.User.findOne({ username: rightPlayer });
+            
+            let winner = null;
+            let winner_username;
+            if (leftScore > rightScore){
+                winner = leftUser._id
+                winner_username = leftUser.username
             }
-            else if(req.session.game.scores['right'] > req.session.game.scores['left']){
-                return res.status(200).json({status: 'game ended', winner: req.session.game.players['right']})
+            else if (rightScore > leftScore){
+                winner = rightUser._id;
+                winner_username = rightUser.username
             }
-            else{
-                return res.status(200).json({status: 'game tied'})
-            }
+
+            const matchDoc = new req.models.Match({
+              player1: leftUser._id,
+              player2: rightUser._id,
+              score: { player1: leftScore, player2: rightScore },
+              winner: winner,
+              date: new Date()
+            });
+            leftUser.matchHistory.push(matchDoc._id);
+            rightUser.matchHistory.push(matchDoc._id);
+            await leftUser.save();
+            await rightUser.save();
+        
+            await matchDoc.save();
+
+        
+            console.log('game stopped, winner:', winner)
+            if (!winner) {
+                return res.status(200).json({ status: 'game tied' });
+            } else {
+                return res.status(200).json({ status: 'game ended', winner: winner_username });
+            }          
         }else {
             return res.status(500).json({error: 'the game hasnt started'})
         }
