@@ -1,12 +1,6 @@
 // import e = require("express");
 
-async function init(){
-    userState()
-}
-
-
 async function login(){
-
     window.location = "/signin";
     userState();
 
@@ -201,8 +195,48 @@ document.addEventListener('keyup', function(e) {
   }
 });
 
-// start the game
-requestAnimationFrame(loop);
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function countdown() {
+  const timer = document.getElementById('match-timer');
+  for (let i = 5; i > 0; i--) {
+      timer.innerText = i;
+      await sleep(1000);
+  }
+  timer.innerText = 'PLAY';
+}
+
+async function timer(){
+  let timer = document.getElementById('match-timer')
+  const interval = setInterval(() => {
+    if (i > 0) {
+        timer.innerText = i;
+        i--;
+    } else {
+        timer.innerText = 'PLAY';
+        clearInterval(interval);
+    }
+  }, 1000);
+}
+
+
+async function init(){
+  await userState()
+  let session_start = await fetch('api/v1/game/start', {
+      method: "POST"
+  })
+  if (session_start.status == 401) {
+    alert('not logged in, cannot start game')
+  } else {
+    console.log('game started')
+    await updateScore()
+    await countdown()
+    requestAnimationFrame(loop);
+  }
+}
+
 
 async function paddleCollision(paddle_side){
   let responseJson = await fetch(`api/v1/game/collision`, {
