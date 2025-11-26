@@ -48,10 +48,10 @@ const userSchema = new mongoose.Schema({
   }]
 })
 
+models.Match = mongoose.model('Match', matchSchema)
+console.log('mongoose matchSchema created')
 models.User = mongoose.model('User', userSchema)
 console.log('mongoose userSchema created')
-models.Match = mongoose.model('Match', userSchema)
-console.log('mongoose matchSchema created')
 
 
 export default models;

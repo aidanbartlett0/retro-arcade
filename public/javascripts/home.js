@@ -67,10 +67,16 @@ async function load_matches(){
         const matchjson = await response.json();
         console.log('match history:', matchjson);  
         let history = document.getElementById('match_history') 
-        history.innerTEXT = matchjson;
+        if (matchjson.matches && matchjson.matches.length > 0) {
+            history.innerText = matchjson.matches.map(m => 
+                `${m.player1} vs ${m.player2} | Score: ${m.score.player1}-${m.score.player2} | Winner: ${m.winner || 'TBD'}`
+            ).join('\n');
+        } else {
+            history.innerText = 'No games yet';
+        }
     } catch(error){
         let history = document.getElementById('match_history') 
-        history.innerTEXT = 'No games yet';
+        history.Text = 'No games yet';
         console.log({error: error})
         alert(error)
     }

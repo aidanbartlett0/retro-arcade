@@ -9,7 +9,7 @@ router.post('/start', async function(req, res, next){
             req.session.game = {
                 playing: true, 
                 scores: { left: 0, right: 0 },
-                players: { left: '(evil) ' + req.session.account.name, right: req.session.account.name }
+                players: { left: 'eviluser', right: req.session.account.username }
             }
             console.log(req.session.game)
             return res.status(200).json({status: 'game started'})
@@ -31,7 +31,8 @@ router.post('/stop', async function(req, res, next){
             const leftPlayer = req.session.game.players['left'];
             const rightPlayer = req.session.game.players['right'];
                                 
-            const leftUser = await req.models.User.findOne({ username: leftPlayer });
+            // const leftUser = await req.models.User.findOne({ username: leftPlayer });
+            const leftUser = await req.models.User.findOne({username: 'eviluser'})
             const rightUser = await req.models.User.findOne({ username: rightPlayer });
             
             let winner = null;
