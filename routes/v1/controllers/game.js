@@ -22,6 +22,30 @@ router.post('/start', async function(req, res, next){
     }
 })
 
+
+router.post('/stop', async function(req, res, next){
+    try{
+        if(req.session.game.playing){
+            console.log('game stopped')
+            if (req.session.game.scores['left'] > req.session.game.scores['right']){
+                return res.status(200).json({status: 'game ended', winner: req.session.game.players['left']})
+            }
+            else if(req.session.game.scores['right'] > req.session.game.scores['left']){
+                return res.status(200).json({status: 'game ended', winner: req.session.game.players['right']})
+            }
+            else{
+                return res.status(200).json({status: 'game tied'})
+            }
+        }else {
+            return res.status(500).json({error: 'the game hasnt started'})
+        }
+    } catch(error){
+        res.status(500).json({status: 'error', 'error': error})
+        console.log(error)
+    }
+})
+
+
 router.post('/collision', async function(req, res, next){
     try{
         console.log(req.body.paddle_side, 'just hit the ball')

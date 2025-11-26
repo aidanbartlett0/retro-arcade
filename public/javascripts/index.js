@@ -1,4 +1,6 @@
 // import e = require("express");
+let isPlaying = true;
+let sudden_death = false;
 
 async function login(){
     window.location = "/signin";
@@ -75,6 +77,7 @@ function collides(obj1, obj2) {
 
 // game loop
 function loop() {
+  if (!isPlaying) return;
   requestAnimationFrame(loop);
   context.clearRect(0,0,canvas.width,canvas.height);
 
@@ -199,26 +202,16 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function countdown() {
+async function countdown(n, started = false) {
   const timer = document.getElementById('match-timer');
-  for (let i = 5; i > 0; i--) {
+  for (let i = n; i > 0; i--) {
       timer.innerText = i;
       await sleep(1000);
   }
-  timer.innerText = 'PLAY';
-}
-
-async function timer(){
-  let timer = document.getElementById('match-timer')
-  const interval = setInterval(() => {
-    if (i > 0) {
-        timer.innerText = i;
-        i--;
-    } else {
-        timer.innerText = 'PLAY';
-        clearInterval(interval);
-    }
-  }, 1000);
+  if(!started){
+    timer.innerText = 'PLAY';
+    await sleep(1000);
+  }
 }
 
 
@@ -232,8 +225,20 @@ async function init(){
   } else {
     console.log('game started')
     await updateScore()
-    await countdown()
+    await countdown(5, false)
     requestAnimationFrame(loop);
+    await countdown(6, true)
+    const stop = await fetch('/api/v1/game/stop', { method: "POST" });
+    const result = await stop.json();
+    const timer = document.getElementById('match-timer');
+  
+    if (result.status === 'game tied') {
+      timer.innerText = "SUDDEN DEATH"
+      sudden_death = true
+    } else {
+      timer.innerText = "WINNER: " + result.winner
+      isPlaying = false
+    }
   }
 }
 
@@ -257,7 +262,14 @@ async function score(paddle_side){
       },
       body: JSON.stringify({ paddle_side })
     })
-    updateScore()
+    await updateScore()
+    if (sudden_death) {
+      isPlaying = false
+      const stop = await fetch('/api/v1/game/stop', { method: "POST" });
+      const result = await stop.json();
+      const timer = document.getElementById('match-timer');
+      timer.innerText = "WINNER: " + result.winner;
+    }
   }catch(error){
     console.log(error)
   }
