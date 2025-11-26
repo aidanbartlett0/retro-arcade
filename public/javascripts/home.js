@@ -59,6 +59,7 @@ async function viewMatchHistory() {
 
 async function load_matches(){
     try{
+        userState()
         let response = await fetch('/api/v1/users/whoami');
         const userjson = await response.json();
         const username = userjson.userInfo.username
