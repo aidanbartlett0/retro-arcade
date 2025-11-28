@@ -1,0 +1,16 @@
+"game_info": {
+      "rightPaddle": {
+        "dy": undefined
+
+      },
+      "leftPaddle": {
+        "dy": undefined
+      },
+
+      "ball": {
+        "dx": undefined,
+        "dy": undefined
+      },
+      
+  
+}

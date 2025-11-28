@@ -4,10 +4,15 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import sessions from 'express-session'
 import models from './models.js';
-
+import enableWs from 'express-ws'
+import crypto from 'crypto';
 import WebAppAuthProvider from 'msal-node-wrapper'
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.dev' });
+
+
+export const lobbies = {}
+export const pin_to_lobby = {}
 
 const authConfig = {
     auth: {
@@ -43,6 +48,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 var app = express();
+enableWs(app)
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -87,6 +93,96 @@ app.get('/signout', (req, res, next) => {
     })(req, res, next);
 
 });
+
+
+
+
+// WebSocket endpoint for the game
+app.ws('/gameSocket', (ws, req) => {
+    
+    if (!req.session.isAuthenticated) {
+        console.log('Unauthorized WebSocket connection attempt closed.');
+        ws.close(1008, 'User not authenticated');
+        return;
+    }
+
+    ws.playerId = req.session.account.username;
+    console.log(`Player ${ws.playerId} established a WebSocket connection.`);
+
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            console.log(`Message from ${ws.playerId}:`, data);
+
+            
+            switch (data.action) {
+                case 'createLobby':
+                case 'joinLobby':
+                    const lobby = lobbies[data.lobbyId];
+                    if (lobby) {
+                        const player = lobby.players.find(p => p.playerId === ws.playerId);
+                        if (player) {
+                            player.ws = ws;
+                            console.log(`Player ${ws.playerId} successfully linked to lobby ${data.lobbyId}.`);
+                        }
+
+                        // Check if the lobby is now full and ready to start
+                        const isLobbyFull = lobby.players.length === 2;
+                        const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1); 
+
+                        if (isLobbyFull && arePlayersConnected) {
+                            console.log(`Lobby ${lobby.lobbyId} is full. Starting game.`);
+                            // Notify both players that the game is starting
+                            lobby.players.forEach(p => {
+                                p.ws.send(JSON.stringify({ type: 'gameStart' }));
+                            });
+                        } else {
+                            console.log(`Lobby ${lobby.lobbyId} is waiting for players. Current count: ${lobby.players.length}`);
+                        }
+                    }
+                    break;
+            }
+        } catch (e) {
+            console.error(`Failed to process message from ${ws.playerId}:`, e);
+        }
+    });
+
+    // 4. CLEANUP: Handle disconnection.
+    ws.on('close', () => {
+        console.log(`Player ${ws.playerId} disconnected.`);
+        // Find which lobby the player was in and remove them
+        for (const lobbyId in activeLobbies) {
+            const lobby = activeLobbies[lobbyId];
+            const playerIndex = lobby.players.findIndex(p => p.playerId === ws.playerId);
+
+            if (playerIndex !== -1) {
+                console.log(`Removing player ${ws.playerId} from lobby ${lobbyId}.`);
+                lobby.players.splice(playerIndex, 1);
+
+                // If the lobby is now empty, delete it
+                if (lobby.players.length === 0) {
+                    delete activeLobbies[lobbyId];
+                    delete pinToLobbyMap[lobby.pin];
+                    console.log(`Lobby ${lobbyId} is empty and has been deleted.`);
+                } else {
+                    // Notify the remaining player
+                    const remainingPlayer = lobby.players[0];
+                    if (remainingPlayer.ws && remainingPlayer.ws.readyState === 1) {
+                        remainingPlayer.ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
+                    }
+                }
+                break; // Exit loop once player is found and handled
+            }
+        }
+    });
+});
+
+
+
+
+
+
+
 
 app.use(authProvider.interactionErrorHandler());
 

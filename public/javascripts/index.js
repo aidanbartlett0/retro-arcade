@@ -2,6 +2,7 @@
 let isPlaying = true;
 let sudden_death = false;
 
+
 async function login(){
     window.location = "/signin";
     userState();
@@ -168,23 +169,27 @@ function loop() {
 // listen to keyboard events to move the paddles
 document.addEventListener('keydown', function(e) {
 
+  
   // up arrow key
   if (e.which === 38) {
-    rightPaddle.dy = -paddleSpeed;
+    send_game_action.rightPaddle.dy = -paddleSpeed;
   }
   // down arrow key
   else if (e.which === 40) {
-    rightPaddle.dy = paddleSpeed;
+    send_game_action.rightPaddle.dy = paddleSpeed;
   }
 
   // w key
   if (e.which === 87) {
-    leftPaddle.dy = -paddleSpeed;
+    send_game_action.leftPaddle.dy = -paddleSpeed;
   }
   // a key
   else if (e.which === 83) {
-    leftPaddle.dy = paddleSpeed;
+    send_game_action.leftPaddle.dy = paddleSpeed;
   }
+
+
+  // send the game change state to the websocket here and it would be accesesd in loop right?
 });
 
 // listen to keyboard events to stop the paddle if key is released

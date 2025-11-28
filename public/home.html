@@ -18,6 +18,14 @@
                 <button onclick="startGame()" class="menu-button" id="start-game-btn">Start Game</button>
                 <button onclick="viewFriends()" class="menu-button" id="friends-btn">Friends</button>
                 <button onclick="viewMatchHistory()" class="menu-button" id="match-history-btn">Match History</button>
+                <button onclick="MakeLobby()" class="menu-button" id ="make-lobby-btn">Create Lobby</button>
+    <button onclick="showJoinLobbyInput()" class="menu-button" id="join-lobby-btn">Join Lobby</button>
+    
+    <div id="pinInputContainer" style="display: none;">
+        <input type="text" id="pinInput" placeholder="Enter PIN" maxlength="6" class="pin-input-field">
+        <button onclick="submitJoinLobbyPin()" class="menu-button">Submit PIN</button>
+        <button onclick="hideJoinLobbyInput()" class="menu-button" style="background: #555;">Cancel</button>
+    </div>
             </nav>
     
             <div class="footer">
