@@ -2,31 +2,26 @@ import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import sessions from 'express-session'
-import models from './models.js';
-import enableWs from 'express-ws'
+import sessions from 'express-session';
+import http from 'http';
+import { WebSocketServer } from 'ws';
 import crypto from 'crypto';
-import WebAppAuthProvider from 'msal-node-wrapper'
+import models from './models.js';
+
+import WebAppAuthProvider from 'msal-node-wrapper';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.dev' });
 
-
-export const lobbies = {}
-export const pin_to_lobby = {}
+// In-memory storage for active games
+export const activeLobbies = {};
+export const pinToLobbyMap = {};
 
 const authConfig = {
     auth: {
         clientId: process.env.CLIENT_ID,
         authority: process.env.CLOUD_INSTANCE + process.env.TENANT_ID,
         clientSecret: process.env.CLIENT_SECRET,
-
-        // clientId: "{App Registration -> Overview: Application (Client) ID}",
-        // authority: "https://login.microsoftonline.com/{App Registration -> Overview: Directory (tenant) ID}",
-        // clientSecret: "{App Registration -> Certificates and Secrets -> Client Secrets: Value}",
         redirectUri: "/redirect"
-        // The redirect needs to be the correct URL that is getting pointed to by "/". When running locally, you just need "/redirect", but when running in azure through an external domain name, it needs to be "https://custom.domain/redirect"
-        // The redirects need to be registered with Azrue App Registrations -> Authentication -> Redirect URI
-        // https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/redirect
     },
 	system: {
     	loggerOptions: {
@@ -48,82 +43,109 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 var app = express();
-enableWs(app)
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-const oneDay = 1000 * 60 * 60 * 24
+const oneDay = 1000 * 60 * 60 * 24;
 app.use((req, res, next) => {
     req.models = models;
     next();
 });
 
-app.use(sessions({
+// Extract session middleware so we can reuse it for WebSockets
+const sessionMiddleware = sessions({
     secret: process.env.EXPRESS_SESSION_SECRET,
     saveUninitialized: true,
     cookie: {maxAge: oneDay},
     resave: false
-}))
+});
+app.use(sessionMiddleware);
 
 const authProvider = await WebAppAuthProvider.WebAppAuthProvider.initialize(authConfig);
 app.use(authProvider.authenticate());
 
 app.use('/api/v1', apiRouter);
 
-// Route handler for home page - must come before static middleware
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
-// Static middleware - serves other static files (but won't override the '/' route)
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/signin', (req, res, next) => {
     return req.authContext.login({
-            postLoginRedirectUri: "/", // redirect here after login
-        })(req, res, next);
+        postLoginRedirectUri: "/",
+    })(req, res, next);
 });
 
 app.get('/signout', (req, res, next) => {
     return req.authContext.logout({
-        postLogoutRedirectUri: "/", // redirect here after logout
+        postLogoutRedirectUri: "/",
     })(req, res, next);
-
 });
 
+app.use(authProvider.interactionErrorHandler());
 
+// Create HTTP server and WebSocket server
+const server = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
 
+// Handle WebSocket upgrade requests manually
+server.on('upgrade', (request, socket, head) => {
+    // Use session middleware to parse session from the request
+    sessionMiddleware(request, {}, () => {
+        // --- TEMPORARY AUTH BYPASS ---
+        // We use the session ID as the player ID.
+        if (!request.session.id) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+        
+        /* --- ORIGINAL MSAL AUTH ---
+        if (!request.session.account || !request.session.account.homeAccountId) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+        */
 
-// WebSocket endpoint for the game
-app.ws('/gameSocket', (ws, req) => {
-    
-    if (!req.session.isAuthenticated) {
-        console.log('Unauthorized WebSocket connection attempt closed.');
-        ws.close(1008, 'User not authenticated');
-        return;
-    }
+        // If authenticated, upgrade the connection to a WebSocket
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request);
+        });
+    });
+});
 
-    ws.playerId = req.session.account.username;
-    console.log(`Player ${ws.playerId} established a WebSocket connection.`);
+// This is the main connection handler for the WebSocket server
+wss.on('connection', (ws, request) => {
+    // Tag the WebSocket object with the player ID from the session
+    const playerId = request.session.id; // Using session ID for testing
+    // const playerId = request.session.account.homeAccountId; // Original MSAL line
+    ws.playerId = playerId;
+    console.log(`Player ${playerId} established a WebSocket connection.`);
 
     ws.on('message', (message) => {
+        console.log(`--- MESSAGE EVENT FIRED for player ${ws.playerId} ---`);
         try {
             const data = JSON.parse(message);
             console.log(`Message from ${ws.playerId}:`, data);
 
-            
             switch (data.action) {
                 case 'createLobby':
                 case 'joinLobby':
-                    const lobby = lobbies[data.lobbyId];
+                case 'joinGame': // This action is sent when client loads index.html
+                    const lobby = activeLobbies[data.lobbyId];
                     if (lobby) {
                         const player = lobby.players.find(p => p.playerId === ws.playerId);
                         if (player) {
-                            player.ws = ws;
-                            console.log(`Player ${ws.playerId} successfully linked to lobby ${data.lobbyId}.`);
+                            player.ws = ws; // Link the live ws object!
+                            console.log(`Player ${ws.playerId} successfully linked to lobby ${data.lobbyId} for action ${data.action}.`);
+                        } else {
+                            console.log(`Player ${ws.playerId} not found in lobby ${data.lobbyId} during ${data.action}.`);
                         }
 
                         // Check if the lobby is now full and ready to start
@@ -131,66 +153,176 @@ app.ws('/gameSocket', (ws, req) => {
                         const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1); 
 
                         if (isLobbyFull && arePlayersConnected) {
-                            console.log(`Lobby ${lobby.lobbyId} is full. Starting game.`);
+                            // Ensure the game state is marked as playing
+                            lobby.gameState.gameplay.is_playing = true;
+                            console.log(`Lobby ${lobby.lobbyId} is full and all players connected. Starting game.`);
                             // Notify both players that the game is starting
                             lobby.players.forEach(p => {
                                 p.ws.send(JSON.stringify({ type: 'gameStart' }));
                             });
                         } else {
-                            console.log(`Lobby ${lobby.lobbyId} is waiting for players. Current count: ${lobby.players.length}`);
+                            console.log(`Lobby ${lobby.lobbyId} is waiting for players. Current count: ${lobby.players.length}. Connected: ${lobby.players.filter(p => p.ws && p.ws.readyState === 1).length}`);
+                        }
+                    } else {
+                        console.log(`Lobby ${data.lobbyId} not found for player ${ws.playerId}.`);
+                    }
+                    break;
+                
+                case 'movePaddle':
+                    const paddleLobby = activeLobbies[data.lobbyId];
+                    if (paddleLobby) {
+                        const player = paddleLobby.players.find(p => p.playerId === ws.playerId);
+                        if (player) {
+                            const paddleSpeed = 15; // Consistent with client-side, or adjust as needed
+                            let newDy = 0;
+                            if (data.direction === 'up') {
+                                newDy = -paddleSpeed;
+                            } else if (data.direction === 'down') {
+                                newDy = paddleSpeed;
+                            } // 'stop' already means newDy = 0
+
+                            if (player.paddle === 'left') {
+                                paddleLobby.gameState.leftPaddle.dy = newDy;
+                            } else if (player.paddle === 'right') {
+                                paddleLobby.gameState.rightPaddle.dy = newDy;
+                            }
+                            console.log(`Player ${ws.playerId} (${player.paddle}) set dy to ${newDy}. Lobby: ${data.lobbyId}`);
                         }
                     }
                     break;
+                // 'movePaddle' and other game actions will go here
             }
         } catch (e) {
             console.error(`Failed to process message from ${ws.playerId}:`, e);
         }
     });
 
-    // 4. CLEANUP: Handle disconnection.
     ws.on('close', () => {
         console.log(`Player ${ws.playerId} disconnected.`);
-        // Find which lobby the player was in and remove them
+        // Find which lobby the player was in and mark them as disconnected.
         for (const lobbyId in activeLobbies) {
             const lobby = activeLobbies[lobbyId];
-            const playerIndex = lobby.players.findIndex(p => p.playerId === ws.playerId);
+            const player = lobby.players.find(p => p.playerId === ws.playerId);
 
-            if (playerIndex !== -1) {
-                console.log(`Removing player ${ws.playerId} from lobby ${lobbyId}.`);
-                lobby.players.splice(playerIndex, 1);
+            if (player) {
+                console.log(`Marking player ${ws.playerId} as disconnected in lobby ${lobbyId}.`);
+                player.ws = null; // Set ws to null instead of removing the player
 
-                // If the lobby is now empty, delete it
-                if (lobby.players.length === 0) {
-                    delete activeLobbies[lobbyId];
-                    delete pinToLobbyMap[lobby.pin];
-                    console.log(`Lobby ${lobbyId} is empty and has been deleted.`);
-                } else {
-                    // Notify the remaining player
-                    const remainingPlayer = lobby.players[0];
-                    if (remainingPlayer.ws && remainingPlayer.ws.readyState === 1) {
-                        remainingPlayer.ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
-                    }
+                // Optional: Notify the other player
+                const otherPlayer = lobby.players.find(p => p.playerId !== ws.playerId);
+                if (otherPlayer && otherPlayer.ws && otherPlayer.ws.readyState === 1) {
+                    // You could send a specific message like 'opponent_temporarily_disconnected'
                 }
-                break; // Exit loop once player is found and handled
+                
+                break; // Exit loop once player is found
             }
         }
     });
 });
 
 
-
-
-
-
-
-
-app.use(authProvider.interactionErrorHandler());
-
 // This needs to be 8080 for Azure to containerize and host it
-let PORT = 8080
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-  });
+let PORT = 8080;
 
+// A helper function for collision detection
+function collides(obj1, obj2) {
+    return obj1.x < obj2.x + obj2.width &&
+        obj1.x + obj1.width > obj2.x &&
+        obj1.y < obj2.y + obj2.height &&
+        obj1.y + obj1.height > obj2.y;
+}
+
+// The main Authoritative Game Loop
+const gameLoop = setInterval(() => {
+    const canvasWidth = 750;
+    const canvasHeight = 585;
+    const grid = 15;
+    const paddleHeight = grid * 5;
+    const maxPaddleY = canvasHeight - grid - paddleHeight;
+
+    // Iterate over all active lobbies
+    for (const lobbyId in activeLobbies) {
+        const lobby = activeLobbies[lobbyId];
+        const state = lobby.gameState;
+
+        const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1);
+
+        // More robust check: only run the loop if 2 players are present AND fully connected via WebSocket
+        if (lobby.players.length < 2 || !arePlayersConnected) {
+            continue;
+        }
+
+        // --- EXTENSIVE DEBUG LOGGING (only when game is active) ---
+        console.log(`Game Loop Tick for Lobby ${lobbyId}: Running physics. Players=${lobby.players.length}, AllConnected=${arePlayersConnected}`);
+
+
+        // 1. UPDATE PADDLE POSITIONS
+        state.leftPaddle.y += state.leftPaddle.dy;
+        state.rightPaddle.y += state.rightPaddle.dy;
+
+        // Prevent paddles from going through walls
+        [state.leftPaddle, state.rightPaddle].forEach(paddle => {
+            if (paddle.y < grid) {
+                paddle.y = grid;
+            } else if (paddle.y > maxPaddleY) {
+                paddle.y = maxPaddleY;
+            }
+        });
+
+        // 2. UPDATE BALL POSITION
+        if (state.ball.resetting) continue;
+
+        state.ball.x += state.ball.dx;
+        state.ball.y += state.ball.dy;
+
+        // Ball collision with top/bottom walls
+        if (state.ball.y < grid || state.ball.y + grid > canvasHeight - grid) {
+            state.ball.dy *= -1;
+        }
+
+        // Ball collision with paddles
+        if (collides(state.ball, state.leftPaddle)) {
+            state.ball.dx *= -1;
+            state.ball.x = state.leftPaddle.x + state.leftPaddle.width;
+        } else if (collides(state.ball, state.rightPaddle)) {
+            state.ball.dx *= -1;
+            state.ball.x = state.rightPaddle.x - state.ball.width;
+        }
+        
+        // 3. HANDLE SCORING
+        if (state.ball.x < 0 || state.ball.x > canvasWidth) {
+            if (state.ball.x > canvasWidth) {
+                state.score.player1++;
+            } else {
+                state.score.player2++;
+            }
+
+            state.ball.resetting = true;
+            state.ball.x = canvasWidth / 2;
+            state.ball.y = canvasHeight / 2;
+            
+            state.ball.dx *= -1; // Serve to the other player
+            
+            setTimeout(() => {
+                if (activeLobbies[lobbyId]) {
+                    activeLobbies[lobbyId].gameState.ball.resetting = false;
+                }
+            }, 500);
+        }
+
+        // 4. BROADCAST THE NEW STATE
+        const newState = JSON.stringify(state);
+        lobby.players.forEach(player => {
+            if (player.ws && player.ws.readyState === 1) {
+                player.ws.send(newState);
+            }
+        });
+    }
+}, 1000 / 60);
+
+
+server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
 
 export default app;

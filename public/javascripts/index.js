@@ -1,300 +1,212 @@
-// import e = require("express");
-let isPlaying = true;
-let sudden_death = false;
+// ==================================
+//          CLIENT-SIDE GAME CODE
+// ==================================
 
+// This variable will hold the most recent game state from the server
+let latestGameState = {};
+let ws; // Will hold our WebSocket connection
+let lobbyId; // Will hold our lobby ID
 
-async function login(){
-    window.location = "/signin";
-    userState();
-
-}
-
-async function logout(){
-    window.location = "/signout";
-    userState();
-}
-
-
-async function userState(){
-    let whoami = await fetch('/api/v1/users/whoami')
-    console.log(whoami)
-    userjson = await whoami.json();
-    console.log(userjson)
-    document.getElementById('userState').innerText = JSON.stringify(userjson)
-}
-
+// Get the canvas and its context
 const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 const grid = 15;
-const paddleHeight = grid * 5; // 80
-const maxPaddleY = canvas.height - grid - paddleHeight;
 
-var paddleSpeed = 15;
-var ballSpeed = 5;
+// This function starts the whole process
+function init() {
+    // 1. GET LOBBY ID AND PIN FROM URL
+    const urlParams = new URLSearchParams(window.location.search);
+    lobbyId = urlParams.get('lobbyId'); // Assign to the global variable
+    const pin = urlParams.get('pin'); // Get the pin if it exists
 
-const leftPaddle = {
-  // start in the middle of the game on the left side
-  x: grid * 2,
-  y: canvas.height / 2 - paddleHeight / 2,
-  width: grid,
-  height: paddleHeight,
-
-  // paddle velocity
-  dy: 0
-};
-const rightPaddle = {
-  // start in the middle of the game on the right side
-  x: canvas.width - grid * 3,
-  y: canvas.height / 2 - paddleHeight / 2,
-  width: grid,
-  height: paddleHeight,
-
-  // paddle velocity
-  dy: 0
-};
-const ball = {
-  // start in the middle of the game
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-  width: grid,
-  height: grid,
-
-  // keep track of when need to reset the ball position
-  resetting: false,
-
-  // ball velocity (start going to the top-right corner)
-  dx: ballSpeed,
-  dy: -ballSpeed
-};
-
-// check for collision between two objects using axis-aligned bounding box (AABB)
-// @see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
-function collides(obj1, obj2) {
-  return obj1.x < obj2.x + obj2.width &&
-        obj1.x + obj1.width > obj2.x &&
-        obj1.y < obj2.y + obj2.height &&
-        obj1.y + obj1.height > obj2.y;
-}
-
-// game loop
-function loop() {
-  if (!isPlaying) return;
-  requestAnimationFrame(loop);
-  context.clearRect(0,0,canvas.width,canvas.height);
-
-  // move paddles by their velocity
-  leftPaddle.y += leftPaddle.dy;
-  rightPaddle.y += rightPaddle.dy;
-
-  // prevent paddles from going through walls
-  if (leftPaddle.y < grid) {
-    leftPaddle.y = grid;
-  }
-  else if (leftPaddle.y > maxPaddleY) {
-    leftPaddle.y = maxPaddleY;
-  }
-
-  if (rightPaddle.y < grid) {
-    rightPaddle.y = grid;
-  }
-  else if (rightPaddle.y > maxPaddleY) {
-    rightPaddle.y = maxPaddleY;
-  }
-
-  // draw paddles
-  context.fillStyle = 'white';
-  context.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
-  context.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
-
-  // move ball by its velocity
-  ball.x += ball.dx;
-  ball.y += ball.dy;
-
-  // prevent ball from going through walls by changing its velocity
-  if (ball.y < grid) {
-    ball.y = grid;
-    ball.dy *= -1;
-  }
-  else if (ball.y + grid > canvas.height - grid) {
-    ball.y = canvas.height - grid * 2;
-    ball.dy *= -1;
-  }
-
-  // reset ball if it goes past paddle (but only if we haven't already done so)
-  if ( (ball.x < 0 || ball.x > canvas.width) && !ball.resetting) {
-    ball.resetting = true;
-    if (ball.dx > 0){
-      score('left')
-    } else{
-      score('right')
+    if (!lobbyId) {
+        alert('Could not find lobby ID. Returning to home page.');
+        window.location.href = '/home.html';
+        return;
     }
-    // give some time for the player to recover before launching the ball again
-    setTimeout(() => {
-      ball.resetting = false;
-      ball.x = canvas.width / 2;
-      ball.y = canvas.height / 2;
-    }, 400);
-  }
 
-  // check to see if ball collides with paddle. if they do change x velocity
-  if (collides(ball, leftPaddle)) {
-    ball.dx *= -1;
-    paddleCollision('left')
-    // move ball next to the paddle otherwise the collision will happen again
-    // in the next frame
-    ball.x = leftPaddle.x + leftPaddle.width;
-  }
-  else if (collides(ball, rightPaddle)) {
-    ball.dx *= -1;
-    paddleCollision('right')
-    // move ball next to the paddle otherwise the collision will happen again
-    // in the next frame
-    ball.x = rightPaddle.x - ball.width;
-  }
+    // If a pin is in the URL, this is the creator. Display a waiting message.
+    if (pin) {
+        const matchInfo = document.getElementById('match-info');
+        if (matchInfo) {
+            matchInfo.innerText = `Waiting for opponent... Share PIN: ${pin}`;
+        }
+    }
 
-  // draw ball
-  context.fillRect(ball.x, ball.y, ball.width, ball.height);
+    // 2. ESTABLISH WEBSOCKET CONNECTION
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${protocol}://${window.location.host}/gameSocket`);
 
-  // draw walls
-  context.fillStyle = 'lightgrey';
-  context.fillRect(0, 0, canvas.width, grid);
-  context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
+    // 3. SET UP WEBSOCKET HANDLERS
+    ws.onopen = () => {
+        console.log('Connected to game server!');
+        // Tell the server we are joining this specific game's WebSocket feed
+        ws.send(JSON.stringify({
+            action: 'joinGame', // A new action to signify joining the game screen
+            lobbyId: lobbyId
+        }));
+    };
 
-  // draw dotted line down the middle
-  for (let i = grid; i < canvas.height - grid; i += grid * 2) {
-    context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
-  }
-}
+    ws.onmessage = (event) => {
+        // Log the raw data coming from the server to debug
+        console.log('Received data from server:', event.data);
 
-// listen to keyboard events to move the paddles
-document.addEventListener('keydown', function(e) {
+        // The server sent a new game state. Store it.
+        const message = JSON.parse(event.data);
 
-  
-  // up arrow key
-  if (e.which === 38) {
-    send_game_action.rightPaddle.dy = -paddleSpeed;
-  }
-  // down arrow key
-  else if (e.which === 40) {
-    send_game_action.rightPaddle.dy = paddleSpeed;
-  }
+        // Check for special message types
+        if (message.type === 'gameStart') {
+            const matchInfo = document.getElementById('match-info');
+            if (matchInfo) {
+                matchInfo.innerText = 'ROUND 1'; // Or whatever you want to show
+            }
+        } else if (message.type === 'opponentDisconnected') {
+            alert('Your opponent has disconnected.');
+            window.location.href = '/home.html';
+        } else {
+            // Otherwise, it's a regular game state update
+            latestGameState = message;
+        }
+    };
 
-  // w key
-  if (e.which === 87) {
-    send_game_action.leftPaddle.dy = -paddleSpeed;
-  }
-  // a key
-  else if (e.which === 83) {
-    send_game_action.leftPaddle.dy = paddleSpeed;
-  }
+    ws.onclose = () => {
+        console.log('Disconnected from game server.');
+        alert('Connection lost. Returning to home page.');
+        window.location.href = '/home.html';
+    };
 
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
 
-  // send the game change state to the websocket here and it would be accesesd in loop right?
-});
-
-// listen to keyboard events to stop the paddle if key is released
-document.addEventListener('keyup', function(e) {
-  if (e.which === 38 || e.which === 40) {
-    rightPaddle.dy = 0;
-  }
-
-  if (e.which === 83 || e.which === 87) {
-    leftPaddle.dy = 0;
-  }
-});
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function countdown(n, started = false) {
-  const timer = document.getElementById('match-timer');
-  for (let i = n; i > 0; i--) {
-      timer.innerText = i;
-      await sleep(1000);
-  }
-  if(!started){
-    timer.innerText = 'PLAY';
-    await sleep(1000);
-  }
-}
-
-
-async function init(){
-  await userState()
-  let session_start = await fetch('api/v1/game/start', {
-      method: "POST"
-  })
-  if (session_start.status == 401) {
-    alert('not logged in, cannot start game')
-  } else {
-    console.log('game started')
-    await updateScore()
-    await countdown(5, false)
+    // 4. START THE RENDERING LOOP
     requestAnimationFrame(loop);
-    await countdown(6, true)
-    const stop = await fetch('/api/v1/game/stop', { method: "POST" });
-    const result = await stop.json();
-    const timer = document.getElementById('match-timer');
-  
-    if (result.status === 'game tied') {
-      timer.innerText = "SUDDEN DEATH"
-      sudden_death = true
-    } else {
-      timer.innerText = "WINNER: " + result.winner
-      isPlaying = false
+}
+
+// =======================================================================
+// THE NEW, SIMPLIFIED "RENDER-ONLY" LOOP
+// All physics and logic have been removed.
+// =======================================================================
+function loop() {
+    requestAnimationFrame(loop);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // If we haven't received a game state from the server yet, do nothing.
+    if (!latestGameState.ball) {
+        return;
     }
-  }
-}
 
+    // Draw the left paddle using coordinates from the server
+    context.fillStyle = 'white';
+    context.fillRect(
+        latestGameState.leftPaddle.x,
+        latestGameState.leftPaddle.y,
+        latestGameState.leftPaddle.width,
+        latestGameState.leftPaddle.height
+    );
 
-async function paddleCollision(paddle_side){
-  let responseJson = await fetch(`api/v1/game/collision`, {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ paddle_side })
-  })
-}
+    // Draw the right paddle using coordinates from the server
+    context.fillRect(
+        latestGameState.rightPaddle.x,
+        latestGameState.rightPaddle.y,
+        latestGameState.rightPaddle.width,
+        latestGameState.rightPaddle.height
+    );
 
-async function score(paddle_side){
-  try{
-    let responseJson = await fetch(`api/v1/game/score`, {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ paddle_side })
-    })
-    await updateScore()
-    if (sudden_death) {
-      isPlaying = false
-      const stop = await fetch('/api/v1/game/stop', { method: "POST" });
-      const result = await stop.json();
-      const timer = document.getElementById('match-timer');
-      timer.innerText = "WINNER: " + result.winner;
+    // Draw the ball using coordinates from the server
+    context.fillRect(
+        latestGameState.ball.x,
+        latestGameState.ball.y,
+        latestGameState.ball.width,
+        latestGameState.ball.height
+    );
+
+    // Update scoreboard
+    const leftScore = document.getElementById('player-left-score');
+    const rightScore = document.getElementById('player-right-score');
+    if (leftScore) leftScore.innerText = latestGameState.score.player1;
+    if (rightScore) rightScore.innerText = latestGameState.score.player2;
+
+    // Draw aesthetic elements (walls, center line)
+    context.fillStyle = 'lightgrey';
+    context.fillRect(0, 0, canvas.width, grid);
+    context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
+    for (let i = grid; i < canvas.height - grid; i += grid * 2) {
+        context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
     }
-  }catch(error){
-    console.log(error)
-  }
 }
 
-async function updateScore(){
-  try{
-    let responseJson = await fetch(`api/v1/game/getScore`, {
-      method: "GET"
-    })
-    let scores = await responseJson.json();
-    console.log(scores);
-    console.log(scores['left'])
-    console.log(scores.left)
-    let rightScore = document.getElementById('player-right-score')
-    let leftScore = document.getElementById('player-left-score')
-    rightScore.innerText = scores.right
-    leftScore.innerText = scores.left
+// =======================================================================
+// INPUT HANDLING - SENDS ACTIONS TO THE SERVER
+// =======================================================================
+const keysPressed = {
+    up: false,
+    down: false
+};
 
-  }catch(error){
-    console.log(error)
-  }
-}
+document.addEventListener('keydown', function(e) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    let keyChanged = false;
+    // up arrow or w key
+    if (e.which === 38 || e.which === 87) {
+        if (!keysPressed.up) {
+            keysPressed.up = true;
+            keyChanged = true;
+        }
+    }
+    // down arrow or s key
+    else if (e.which === 40 || e.which === 83) {
+        if (!keysPressed.down) {
+            keysPressed.down = true;
+            keyChanged = true;
+        }
+    }
+
+    // If a relevant key was pressed, determine the direction and send it
+    if (keyChanged) {
+        let direction = 'stop';
+        if (keysPressed.up) {
+            direction = 'up';
+        } else if (keysPressed.down) {
+            direction = 'down';
+        }
+        ws.send(JSON.stringify({ action: 'movePaddle', direction: direction, lobbyId: lobbyId }));
+    }
+});
+
+document.addEventListener('keyup', function(e) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    
+    let keyChanged = false;
+    // up arrow or w key
+    if (e.which === 38 || e.which === 87) {
+        if (keysPressed.up) {
+            keysPressed.up = false;
+            keyChanged = true;
+        }
+    }
+    // down arrow or s key
+    else if (e.which === 40 || e.which === 83) {
+        if (keysPressed.down) {
+            keysPressed.down = false;
+            keyChanged = true;
+        }
+    }
+
+    // If a relevant key was released, determine the new direction
+    if (keyChanged) {
+        let direction = 'stop';
+        // If the other key is still held, move in that direction
+        if (keysPressed.up) {
+            direction = 'up';
+        } else if (keysPressed.down) {
+            direction = 'down';
+        }
+        ws.send(JSON.stringify({ action: 'movePaddle', direction: direction, lobbyId: lobbyId }));
+    }
+});
+
+
+// Start the game initialization process when the page loads
+init();

@@ -29,6 +29,7 @@
     "mongodb": "^7.0.0",
     "mongoose": "^8.20.0",
     "morgan": "^1.10.1",
-    "msal-node-wrapper": "https://gitpkg.now.sh/kylethayer/ms-identity-javascript-nodejs-tutorial-msal-node-v2-/Common/msal-node-wrapper?main"
+    "msal-node-wrapper": "https://gitpkg.now.sh/kylethayer/ms-identity-javascript-nodejs-tutorial-msal-node-v2-/Common/msal-node-wrapper?main",
+    "ws": "^8.18.3"
   }
 }
