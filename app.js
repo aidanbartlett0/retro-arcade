@@ -12,7 +12,7 @@ import WebAppAuthProvider from 'msal-node-wrapper';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.dev' });
 
-// In-memory storage for active games
+// Active games storage
 export const activeLobbies = {};
 export const pinToLobbyMap = {};
 
@@ -55,7 +55,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Extract session middleware so we can reuse it for WebSockets
+// Session middleware for WebSockets
 const sessionMiddleware = sessions({
     secret: process.env.EXPRESS_SESSION_SECRET,
     saveUninitialized: true,
@@ -89,40 +89,32 @@ app.get('/signout', (req, res, next) => {
 
 app.use(authProvider.interactionErrorHandler());
 
-// Create HTTP server and WebSocket server
+// HTTP and WebSocket servers
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
-// Handle WebSocket upgrade requests manually
+// Handle WebSocket upgrades
 server.on('upgrade', (request, socket, head) => {
-    // Use session middleware to parse session from the request
+    // Parse session from request
     sessionMiddleware(request, {}, () => {
-        // --- TEMPORARY AUTH BYPASS ---
-        // We use the session ID as the player ID.
+        // FIXME: AUTH BYPASS
+        // Use session ID as player ID.
         if (!request.session.id) {
             socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
             socket.destroy();
             return;
         }
         
-        /* --- ORIGINAL MSAL AUTH ---
-        if (!request.session.account || !request.session.account.homeAccountId) {
-            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-            socket.destroy();
-            return;
-        }
-        */
-
-        // If authenticated, upgrade the connection to a WebSocket
+        // Upgrade to WebSocket
         wss.handleUpgrade(request, socket, head, (ws) => {
             wss.emit('connection', ws, request);
         });
     });
 });
 
-// This is the main connection handler for the WebSocket server
+// WebSocket connection handler
 wss.on('connection', (ws, request) => {
-    // Tag the WebSocket object with the player ID from the session
+    // Tag WebSocket with player ID
     const playerId = request.session.id; // Using session ID for testing
     // const playerId = request.session.account.homeAccountId; // Original MSAL line
     ws.playerId = playerId;
@@ -137,12 +129,12 @@ wss.on('connection', (ws, request) => {
             switch (data.action) {
                 case 'createLobby':
                 case 'joinLobby':
-                case 'joinGame': // This action is sent when client loads index.html
+                case 'joinGame': 
                     const lobby = activeLobbies[data.lobbyId];
                     if (lobby) {
                         const player = lobby.players.find(p => p.playerId === ws.playerId);
                         if (player) {
-                            player.ws = ws; // Link the live ws object!
+                            player.ws = ws; 
                             console.log(`Player ${ws.playerId} successfully linked to lobby ${data.lobbyId} for action ${data.action}.`);
                         } else {
                             console.log(`Player ${ws.playerId} not found in lobby ${data.lobbyId} during ${data.action}.`);
@@ -173,13 +165,13 @@ wss.on('connection', (ws, request) => {
                     if (paddleLobby) {
                         const player = paddleLobby.players.find(p => p.playerId === ws.playerId);
                         if (player) {
-                            const paddleSpeed = 15; // Consistent with client-side, or adjust as needed
+                            const paddleSpeed = 15;
                             let newDy = 0;
                             if (data.direction === 'up') {
                                 newDy = -paddleSpeed;
                             } else if (data.direction === 'down') {
                                 newDy = paddleSpeed;
-                            } // 'stop' already means newDy = 0
+                            } 
 
                             if (player.paddle === 'left') {
                                 paddleLobby.gameState.leftPaddle.dy = newDy;
@@ -190,7 +182,6 @@ wss.on('connection', (ws, request) => {
                         }
                     }
                     break;
-                // 'movePaddle' and other game actions will go here
             }
         } catch (e) {
             console.error(`Failed to process message from ${ws.playerId}:`, e);
@@ -206,15 +197,13 @@ wss.on('connection', (ws, request) => {
 
             if (player) {
                 console.log(`Marking player ${ws.playerId} as disconnected in lobby ${lobbyId}.`);
-                player.ws = null; // Set ws to null instead of removing the player
+                player.ws = null; 
 
-                // Optional: Notify the other player
                 const otherPlayer = lobby.players.find(p => p.playerId !== ws.playerId);
                 if (otherPlayer && otherPlayer.ws && otherPlayer.ws.readyState === 1) {
-                    // You could send a specific message like 'opponent_temporarily_disconnected'
                 }
                 
-                break; // Exit loop once player is found
+                break;
             }
         }
     });

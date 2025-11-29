@@ -33,38 +33,32 @@ function init() {
         }
     }
 
-    // 2. ESTABLISH WEBSOCKET CONNECTION
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(`${protocol}://${window.location.host}/gameSocket`);
 
-    // 3. SET UP WEBSOCKET HANDLERS
     ws.onopen = () => {
         console.log('Connected to game server!');
-        // Tell the server we are joining this specific game's WebSocket feed
         ws.send(JSON.stringify({
-            action: 'joinGame', // A new action to signify joining the game screen
+            action: 'joinGame', 
             lobbyId: lobbyId
         }));
     };
 
     ws.onmessage = (event) => {
-        // Log the raw data coming from the server to debug
         console.log('Received data from server:', event.data);
 
-        // The server sent a new game state. Store it.
         const message = JSON.parse(event.data);
 
         // Check for special message types
         if (message.type === 'gameStart') {
             const matchInfo = document.getElementById('match-info');
             if (matchInfo) {
-                matchInfo.innerText = 'ROUND 1'; // Or whatever you want to show
+                matchInfo.innerText = 'ROUND 1';
             }
         } else if (message.type === 'opponentDisconnected') {
             alert('Your opponent has disconnected.');
             window.location.href = '/home.html';
         } else {
-            // Otherwise, it's a regular game state update
             latestGameState = message;
         }
     };
@@ -83,20 +77,15 @@ function init() {
     requestAnimationFrame(loop);
 }
 
-// =======================================================================
-// THE NEW, SIMPLIFIED "RENDER-ONLY" LOOP
-// All physics and logic have been removed.
-// =======================================================================
+
 function loop() {
     requestAnimationFrame(loop);
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // If we haven't received a game state from the server yet, do nothing.
     if (!latestGameState.ball) {
         return;
     }
 
-    // Draw the left paddle using coordinates from the server
     context.fillStyle = 'white';
     context.fillRect(
         latestGameState.leftPaddle.x,
@@ -136,9 +125,7 @@ function loop() {
     }
 }
 
-// =======================================================================
-// INPUT HANDLING - SENDS ACTIONS TO THE SERVER
-// =======================================================================
+
 const keysPressed = {
     up: false,
     down: false
