@@ -43,5 +43,35 @@ router.get('/history', async function(req, res, next) {
     }
   });
   
+router.post('/saveGame', async (req,res) => {
+    
+    try {
+        const {player1, player2, score, winner} = req.body
+        console.log(`player1: ${player1}, player2: ${player2}, score: ${JSON.stringify(score)}, winner: ${winner}`)
+        res.status(200).send("ysys it reached here")
+
+    } catch (err) {
+
+    }
+
+})
+
+
+
+// const leftUser = await req.models.User.findOne({username: 'eviluser'})
+// const rightUser = await req.models.User.findOne({ username: rightPlayer });
+// const matchDoc = new req.models.Match({
+//               player1: leftUser._id,
+//               player2: rightUser._id,
+//               score: { player1: leftScore, player2: rightScore },
+//               winner: winner,
+//               date: new Date()
+//             });
+//             leftUser.matchHistory.push(matchDoc._id);
+//             rightUser.matchHistory.push(matchDoc._id);
+//             await leftUser.save();
+//             await rightUser.save();
+        
+//             await matchDoc.save();
 
 export default router;

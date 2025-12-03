@@ -50,25 +50,35 @@ async function submitJoinLobbyPin() {
 
 
 async function MakeLobby() {
-    try {
-        const createLobbyResponse = await fetch('/api/v1/lobbies/create', {
-            method: "POST"
-        });
+    const response = await fetch('/api/v1/users/whoami');
+    const userjson = await response.json();
+    console.log('User state:', userjson);
+    
+    const isLoggedIn = userjson.status === 'loggedin' && userjson.userInfo;
 
-        if (!createLobbyResponse.ok) {
-            alert('Failed to create lobby on the server. Please try again.');
-            return;
+    if(isLoggedIn) {
+        try {
+            const createLobbyResponse = await fetch('/api/v1/lobbies/create', {
+                method: "POST"
+            });
+
+            if (!createLobbyResponse.ok) {
+                alert('Failed to create lobby on the server. Please try again.');
+                return;
+            }
+
+            const lobbyInfo = await createLobbyResponse.json();
+            window.location.href = `/index.html?lobbyId=${lobbyInfo.lobbyId}&pin=${lobbyInfo.pin}`;
+
+        } catch (error) {
+            console.error('Error in MakeLobby function:', error);
+            alert('An error occurred while creating the lobby.');
         }
-
-        const lobbyInfo = await createLobbyResponse.json();
-        // Immediately redirect to the game page, passing both lobbyId and pin
-        window.location.href = `/index.html?lobbyId=${lobbyInfo.lobbyId}&pin=${lobbyInfo.pin}`;
-
-    } catch (error) {
-        console.error('Error in MakeLobby function:', error);
-        alert('An error occurred while creating the lobby.');
+    }else {
+        alert('Please login first to make a lobby')
     }
 }
+
 
 async function userState(){
     const loginBtn = document.getElementById('login-btn');
