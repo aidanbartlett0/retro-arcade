@@ -219,20 +219,36 @@ function collides(obj1, obj2) {
         obj1.y + obj1.height > obj2.y;
 }
 
-async function saveMatchResult(lobbyId, winner, score, player1Id, player2Id) {
+async function saveMatchResult(lobby) {
     try {
-        await fetch ('http://localhost:8080/api/v1/matches/saveGame', 
-            {
-                method: 'POST',
-                body: JSON.stringify({
-                    lobbyId: lobbyId,
-                    winner: winner,
-                    score: score,
-                    player1: player1Id,
-                    player2: player2Id
-                })
-            }
-        )
+        const player1Id = lobby.players[0].playerId;
+        const player2Id = lobby.players[1].playerId;
+        const winningPlayerId = lobby.gameState.gameplay.winning_player;
+
+        const p1 = await models.User.findOne({ username: player1Id });
+        const p2 = await models.User.findOne({ username: player2Id });
+
+        if (!p1 || !p2) {
+            console.error(`Could not find one or both users to save match result. Player1: ${player1Id}, Player2: ${player2Id}`);
+            return;
+        }
+
+
+        const matchDoc = new models.Match({
+            player1: p1._id,
+            player2: p2._id,
+            score: lobby.gameState.score,
+            winner: winningPlayerId,
+            date: new Date()
+        });
+
+        p1.matchHistory.push(matchDoc._id);
+        p2.matchHistory.push(matchDoc._id);
+
+        await p1.save();
+        await p2.save();
+        await matchDoc.save();
+        console.log(`Match result for lobby ${lobby.lobbyId} saved successfully.`);
 
     } catch (err) {
         console.error('Error saving match result:', err);
@@ -327,7 +343,7 @@ const gameLoop = setInterval(() => {
             }, 500);
         }
         if (!state.gameplay.is_playing && state.winning_player) {
-                try {
+                // try {
                     const ending_game_state = {
                         lobbyId: lobbyId, 
                         winning_player: state.winning_player, 
@@ -336,25 +352,18 @@ const gameLoop = setInterval(() => {
                         player2: lobby.players[1].playerId,
                         ball: state.ball
                 }
-                const newState = JSON.stringify(ending_game_state);
-                lobby.players.forEach(player => {
-                if (player.ws && player.ws.readyState === 1) {
-                    player.ws.send(newState);
-                }
-                
-            }
-        );
-            } catch(err) {
-                console.error('Error saving match result:', err);
-            }
-        } else {
+                saveMatchResult(lobby);
+            // } catch(err) {
+            //     console.error('Error saving match result:', err);
+            // }
+        } 
         const newState = JSON.stringify(state);
         lobby.players.forEach(player => {
             if (player.ws && player.ws.readyState === 1) {
                 player.ws.send(newState);
             }
         });
-    }
+    
     }
 }, 1000 / 60);
 

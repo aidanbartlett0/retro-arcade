@@ -92,36 +92,10 @@ function loop() {
     // GAME IS EDNED HERE SO WE SAVE THE GAME AND REDIRECT TO HOME
     if (latestGameState.winning_player) {
         document.getElementById('match-info').innerText = `GAME FINISHED - CONGRATS ${latestGameState.winning_player.toUpperCase()}! YOU WIN!`;
-        fetch('api/v1/matches/saveGame', {
-            method: 'POST',
-            body: JSON.stringify({
-                player1: latestGameState.player1,
-                player2: latestGameState.player2,
-                score: latestGameState.score,
-                winner: latestGameState.winning_player
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Game saved successfully:', data);
             setTimeout(() => {
                 window.location.href = '/home.html';
             }, 2000);
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-            setTimeout(() => {
-                window.location.href = '/home.html';
-            }, 2000);
-        });
+        };
         return;
     }
 

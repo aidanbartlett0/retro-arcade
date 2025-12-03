@@ -43,15 +43,52 @@ router.get('/history', async function(req, res, next) {
     }
   });
   
+// const matchSchema = new mongoose.Schema({
+//   player1: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User'
+//   },
+//   player2: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User'
+//   },
+//   score: {
+//     player1: { type: Number, default: 0 },
+//     player2: { type: Number, default: 0 }
+//   },
+//   winner: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User'
+//   },
+//   date: Date
+// })
+
 router.post('/saveGame', async (req,res) => {
     
     try {
-        const {player1, player2, score, winner} = req.body
+        const {player1, player2, winner} = req.body
+        const score_1 = req.body.score.player1
+        const score_2 = req.body.score.player2
         console.log(`player1: ${player1}, player2: ${player2}, score: ${JSON.stringify(score)}, winner: ${winner}`)
-        res.status(200).send("ysys it reached here")
+        const leftUser = await req.models.User.findOne({username: player1})
+        const rightUser = await req.models.User.findOne({ username: player2 });
+            
+        const matchDoc = new req.models.Match({
+              player1: leftUser._id,
+              player2: rightUser._id,
+              score: { player1: score_1, player2: score_2 },
+              winner: winner,
+              date: new Date()
+        });
+        leftUser.matchHistory.push(matchDoc._id);
+        rightUser.matchHistory.push(matchDoc._id);
+        await leftUser.save();
+        await rightUser.save();
+        
+        await matchDoc.save();
 
     } catch (err) {
-
+        console.log('Error saving match:', err);
     }
 
 })

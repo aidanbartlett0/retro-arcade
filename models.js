@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema({
   matchHistory: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Match'
+  }],
+  friends: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  friendRequests: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }]
 })
 

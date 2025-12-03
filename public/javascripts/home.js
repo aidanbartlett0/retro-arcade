@@ -27,6 +27,7 @@ async function submitJoinLobbyPin() {
     }
 
     try {
+        const response = await fetch('/api/v1/users/whoami');
         const joinLobbyResponse = await fetch('/api/v1/lobbies/join', {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
