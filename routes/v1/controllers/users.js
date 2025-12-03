@@ -19,7 +19,8 @@ router.get('/whoami', async function(req, res, next){
           firstName: firstName,
           lastName: lastName,
           matchHistory: [],
-          friends: []
+          friends: [],
+          friendRequests: []
         })
         console.log("CREATED NEW USER:", user.username)
       }
@@ -72,15 +73,26 @@ router.post('/friends/add', async function(req, res, next){
     if (!user.friends) {
       user.friends = [];
     }
+    if (!friendUser.friendRequests) {
+      friendUser.friendRequests = [];
+    }
 
     if (user.friends.some(friendId => String(friendId) === String(friendUser._id))) {
       return res.status(400).json({status: 'error', error: 'User is already your friend'});
     }
 
-    user.friends.push(friendUser._id);
-    await user.save();
+    if (friendUser.friendRequests.some(requestId => String(requestId) === String(user._id))) {
+      return res.status(400).json({status: 'error', error: 'Friend request already sent'});
+    }
 
-    res.json({status: 'success', message: `Added ${friendUsername} as a friend`});
+    if (user.friendRequests && user.friendRequests.some(requestId => String(requestId) === String(friendUser._id))) {
+      return res.status(400).json({status: 'error', error: 'This user has already sent you a friend request. Please accept or deny it first.'});
+    }
+
+    friendUser.friendRequests.push(user._id);
+    await friendUser.save();
+
+    res.json({status: 'success', message: `Friend request sent to ${friendUsername}`});
   } catch(error) {
     res.status(500).json({status: 'error', error: error.message});
     console.log(error);
@@ -112,6 +124,179 @@ router.get('/friends', async function(req, res, next){
     }));
 
     res.json({status: 'success', friends: friendsList});
+  } catch(error) {
+    res.status(500).json({status: 'error', error: error.message});
+    console.log(error);
+  }
+})
+
+router.post('/friends/remove', async function(req, res, next){
+  try {
+    if (!req.session.isAuthenticated) {
+      return res.status(401).json({status: 'error', error: 'Not authenticated'});
+    }
+
+    const username = req.session.account.username;
+    const friendUserId = req.body.userId;
+
+    if (!friendUserId) {
+      return res.status(400).json({status: 'error', error: 'User ID is required'});
+    }
+
+    let user = await req.models.User.findOne({ username: username });
+    if (!user) {
+      return res.status(404).json({status: 'error', error: 'User not found'});
+    }
+
+    if (!user.friends) {
+      user.friends = [];
+    }
+
+    const friendIndex = user.friends.findIndex(friendId => String(friendId) === String(friendUserId));
+    if (friendIndex === -1) {
+      return res.status(400).json({status: 'error', error: 'User is not your friend'});
+    }
+
+    user.friends.splice(friendIndex, 1);
+    await user.save();
+
+    const friendUser = await req.models.User.findOne({ _id: friendUserId });
+    if (friendUser) {
+      if (!friendUser.friends) {
+        friendUser.friends = [];
+      }
+      const userIndex = friendUser.friends.findIndex(friendId => String(friendId) === String(user._id));
+      if (userIndex !== -1) {
+        friendUser.friends.splice(userIndex, 1);
+        await friendUser.save();
+      }
+    }
+
+    res.json({status: 'success', message: 'Friend removed successfully'});
+  } catch(error) {
+    res.status(500).json({status: 'error', error: error.message});
+    console.log(error);
+  }
+})
+
+router.get('/friends/requests', async function(req, res, next){
+  try {
+    if (!req.session.isAuthenticated) {
+      return res.status(401).json({status: 'error', error: 'Not authenticated'});
+    }
+
+    const username = req.session.account.username;
+    let user = await req.models.User.findOne({ username: username }).populate('friendRequests');
+
+    if (!user) {
+      return res.status(404).json({status: 'error', error: 'User not found'});
+    }
+
+    if (!user.friendRequests) {
+      user.friendRequests = [];
+    }
+
+    const requestsList = user.friendRequests.map(request => ({
+      id: request._id,
+      username: request.username,
+      firstName: request.firstName,
+      lastName: request.lastName
+    }));
+
+    res.json({status: 'success', requests: requestsList});
+  } catch(error) {
+    res.status(500).json({status: 'error', error: error.message});
+    console.log(error);
+  }
+})
+
+router.post('/friends/requests/accept', async function(req, res, next){
+  try {
+    if (!req.session.isAuthenticated) {
+      return res.status(401).json({status: 'error', error: 'Not authenticated'});
+    }
+
+    const username = req.session.account.username;
+    const requestUserId = req.body.userId;
+
+    if (!requestUserId) {
+      return res.status(400).json({status: 'error', error: 'User ID is required'});
+    }
+
+    let user = await req.models.User.findOne({ username: username });
+    if (!user) {
+      return res.status(404).json({status: 'error', error: 'User not found'});
+    }
+
+    if (!user.friendRequests) {
+      user.friendRequests = [];
+    }
+    if (!user.friends) {
+      user.friends = [];
+    }
+
+    const requestIndex = user.friendRequests.findIndex(requestId => String(requestId) === String(requestUserId));
+    if (requestIndex === -1) {
+      return res.status(400).json({status: 'error', error: 'Friend request not found'});
+    }
+
+    user.friendRequests.splice(requestIndex, 1);
+
+    if (!user.friends.some(friendId => String(friendId) === String(requestUserId))) {
+      user.friends.push(requestUserId);
+    }
+
+    await user.save();
+
+    const requester = await req.models.User.findOne({ _id: requestUserId });
+    if (requester) {
+      if (!requester.friends) {
+        requester.friends = [];
+      }
+      if (!requester.friends.some(friendId => String(friendId) === String(user._id))) {
+        requester.friends.push(user._id);
+      }
+      await requester.save();
+    }
+
+    res.json({status: 'success', message: 'Friend request accepted'});
+  } catch(error) {
+    res.status(500).json({status: 'error', error: error.message});
+    console.log(error);
+  }
+})
+
+router.post('/friends/requests/deny', async function(req, res, next){
+  try {
+    if (!req.session.isAuthenticated) {
+      return res.status(401).json({status: 'error', error: 'Not authenticated'});
+    }
+
+    const username = req.session.account.username;
+    const requestUserId = req.body.userId;
+
+    if (!requestUserId) {
+      return res.status(400).json({status: 'error', error: 'User ID is required'});
+    }
+
+    let user = await req.models.User.findOne({ username: username });
+    if (!user) {
+      return res.status(404).json({status: 'error', error: 'User not found'});
+    }
+
+    if (!user.friendRequests) {
+      user.friendRequests = [];
+    }
+
+    const requestIndex = user.friendRequests.findIndex(requestId => String(requestId) === String(requestUserId));
+    if (requestIndex === -1) {
+      return res.status(400).json({status: 'error', error: 'Friend request not found'});
+    }
+
+    user.friendRequests.splice(requestIndex, 1);
+    await user.save();
+
+    res.json({status: 'success', message: 'Friend request denied'});
   } catch(error) {
     res.status(500).json({status: 'error', error: error.message});
     console.log(error);

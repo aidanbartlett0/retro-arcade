@@ -24,9 +24,15 @@
                     <h2>Add Friend</h2>
                     <div class="add-friend-form">
                         <input type="text" id="friend-username-input" placeholder="Enter username" class="friend-input">
-                        <button onclick="addFriend()" class="menu-button" id="add-friend-btn">Add Friend</button>
+                        <button onclick="addFriend()" class="menu-button" id="add-friend-btn">Send Friend Request</button>
                     </div>
                     <div id="add-friend-message" class="message"></div>
+                </div>
+
+                <div class="friend-requests-section">
+                    <h2>Friend Requests</h2>
+                    <div id="friend-requests-alert" class="friend-requests-alert" style="display: none;"></div>
+                    <div id="friend-requests-list" class="friends-list"></div>
                 </div>
 
                 <div class="friends-list-section">
