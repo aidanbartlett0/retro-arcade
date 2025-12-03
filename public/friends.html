@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="stylesheets/style.css">
+        <script src="javascripts/friends.js" defer></script>
+        <title>Retro Arcade - Friends</title>
+    </head>
+    <body class="friends-page">
+        <div class="top-bar">
+            <button onclick="login()" id="login-btn" class="auth-button">Login</button>
+            <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
+            <div id="user-info" class="user-info"></div>
+        </div>
+        
+        <div class="container">
+            <h1>Friends</h1>
+            
+            <nav class="menu">
+                <button onclick="goHome()" class="menu-button">Home</button>
+                <button onclick="viewMatchHistory()" class="menu-button">Match History</button>
+            </nav>
+
+            <div class="friends-section">
+                <div class="add-friend-section">
+                    <h2>Add Friend</h2>
+                    <div class="add-friend-form">
+                        <input type="text" id="friend-username-input" placeholder="Enter username" class="friend-input">
+                        <button onclick="addFriend()" class="menu-button" id="add-friend-btn">Add Friend</button>
+                    </div>
+                    <div id="add-friend-message" class="message"></div>
+                </div>
+
+                <div class="friends-list-section">
+                    <h2>My Friends</h2>
+                    <div id="friends-list" class="friends-list"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
