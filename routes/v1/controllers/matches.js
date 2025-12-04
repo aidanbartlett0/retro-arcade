@@ -43,34 +43,34 @@ router.get('/history', async function(req, res, next) {
     }
   });
 
-router.post('/saveGame', async (req,res) => {
+// router.post('/saveGame', async (req,res) => {
     
-    try {
-        const {player1, player2, winner} = req.body
-        const score_1 = req.body.score.player1
-        const score_2 = req.body.score.player2
-        console.log(`player1: ${player1}, player2: ${player2}, score: ${JSON.stringify(score)}, winner: ${winner}`)
-        const leftUser = await req.models.User.findOne({username: player1})
-        const rightUser = await req.models.User.findOne({ username: player2 });
+//     try {
+//         const {player1, player2, winner} = req.body
+//         const score_1 = req.body.score.player1
+//         const score_2 = req.body.score.player2
+//         console.log(`player1: ${player1}, player2: ${player2}, score: ${JSON.stringify(score)}, winner: ${winner}`)
+//         const leftUser = await req.models.User.findOne({username: player1})
+//         const rightUser = await req.models.User.findOne({ username: player2 });
             
-        const matchDoc = new req.models.Match({
-              player1: leftUser._id,
-              player2: rightUser._id,
-              score: { player1: score_1, player2: score_2 },
-              winner: winner,
-              date: new Date()
-        });
-        leftUser.matchHistory.push(matchDoc._id);
-        rightUser.matchHistory.push(matchDoc._id);
-        await leftUser.save();
-        await rightUser.save();
+//         const matchDoc = new req.models.Match({
+//               player1: leftUser._id,
+//               player2: rightUser._id,
+//               score: { player1: score_1, player2: score_2 },
+//               winner: winner,
+//               date: new Date()
+//         });
+//         leftUser.matchHistory.push(matchDoc._id);
+//         rightUser.matchHistory.push(matchDoc._id);
+//         await leftUser.save();
+//         await rightUser.save();
         
-        await matchDoc.save();
+//         await matchDoc.save();
 
-    } catch (err) {
-        console.log('Error saving match:', err);
-    }
+//     } catch (err) {
+//         console.log('Error saving match:', err);
+//     }
 
-})
+// })
 
 export default router;
