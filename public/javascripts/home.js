@@ -102,13 +102,23 @@ async function userState(){
     }
 }
 
+function goHome() {
+    window.location.href = '/home.html';
+}
+
 function startGame() {
     window.location.href = '/index.html';
 }
 
-function viewFriends() {
-    alert('Friends feature coming soon!');
-    // window.location.href = '/friends.html';
+async function viewFriends() {
+    const response = await fetch('/api/v1/users/whoami');
+    const userjson = await response.json();
+    if (userjson.status === 'loggedin'){
+        window.location.href = '/friends.html';
+    }
+    else{
+        alert('You must log in first!')
+    }
 }
 
 async function viewMatchHistory() {
@@ -132,19 +142,111 @@ async function load_matches(){
         response = await fetch(`/api/v1/matches/history`)
         const matchjson = await response.json();
         console.log('match history:', matchjson);  
-        let history = document.getElementById('match_history') 
+        
+        let statsContainer = document.getElementById('match-stats-container');
         if (matchjson.matches && matchjson.matches.length > 0) {
-            history.innerText = matchjson.matches.map(m => 
-                `${m.player1} vs ${m.player2} | Score: ${m.score.player1}-${m.score.player2} | Winner: ${m.winner || 'TBD'}`
-            ).join('\n');
+            const completedMatches = matchjson.matches.filter(m => m.winner);
+            const gamesPlayed = completedMatches.length;
+            const gamesWon = completedMatches.filter(m => m.won).length;
+            const gamesLost = gamesPlayed - gamesWon;
+            const winRate = gamesPlayed > 0 ? ((gamesWon / gamesPlayed) * 100).toFixed(1) : 0;
+            
+            statsContainer.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-label">Games Played</div>
+                        <div class="stat-value">${gamesPlayed}</div>
+                    </div>
+                    <div class="stat-card stat-won">
+                        <div class="stat-label">Wins</div>
+                        <div class="stat-value">${gamesWon}</div>
+                    </div>
+                    <div class="stat-card stat-lost">
+                        <div class="stat-label">Losses</div>
+                        <div class="stat-value">${gamesLost}</div>
+                    </div>
+                    <div class="stat-card stat-rate">
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value">${winRate}%</div>
+                    </div>
+                </div>
+            `;
         } else {
-            history.innerText = 'No games yet';
+            statsContainer.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-label">Games Played</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card stat-won">
+                        <div class="stat-label">Wins</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card stat-lost">
+                        <div class="stat-label">Losses</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card stat-rate">
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value">0%</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        let historyContainer = document.getElementById('match-history-container') 
+        if (matchjson.matches && matchjson.matches.length > 0) {
+            historyContainer.innerHTML = matchjson.matches.map(match => {
+                const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'Date unknown';
+                
+                let resultClass = '';
+                let resultText = '';
+                if (match.winner) {
+                    resultClass = match.won ? 'match-won' : 'match-lost';
+                    resultText = match.won ? 'Victory' : 'Defeat';
+                } else {
+                    resultClass = 'match-pending';
+                    resultText = 'No Winner';
+                }
+                
+                const isPlayer1Winner = match.winner && match.player1 === match.winner;
+                const isPlayer2Winner = match.winner && match.player2 === match.winner;
+                const isPlayer1Current = match.player1 === username;
+                const isPlayer2Current = match.player2 === username;
+                
+                return `
+                    <div class="match-item ${resultClass}">
+                        <div class="match-players">
+                            <span class="player-name ${isPlayer1Winner ? 'winner' : ''} ${isPlayer1Current ? 'current-user' : ''}">${match.player1}</span>
+                            <span class="vs-separator">vs</span>
+                            <span class="player-name ${isPlayer2Winner ? 'winner' : ''} ${isPlayer2Current ? 'current-user' : ''}">${match.player2}</span>
+                        </div>
+                        <div class="match-score">
+                            <span class="score-value">${match.score?.player1 || 0}</span>
+                            <span class="score-separator">-</span>
+                            <span class="score-value">${match.score?.player2 || 0}</span>
+                        </div>
+                        <div class="match-result">
+                            ${match.winner ? `<span class="result-badge ${resultClass}">${resultText}</span>` : ''}
+                            ${match.winner ? `<span class="winner-name">Winner: ${match.winner}</span>` : '<span class="winner-name">Match incomplete</span>'}
+                        </div>
+                        <div class="match-date">${matchDate}</div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            historyContainer.innerHTML = '<div class="no-matches">No match history yet. Play a game to see your matches here!</div>';
         }
     } catch(error){
-        let history = document.getElementById('match_history') 
-        history.Text = 'No games yet';
+        let historyContainer = document.getElementById('match-history-container') 
+        historyContainer.innerHTML = '<div class="no-matches">Unable to load match history. Please try again later.</div>';
         console.log({error: error})
-        alert(error)
     }
 
 }

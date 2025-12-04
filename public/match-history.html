@@ -1,19 +1,28 @@
 <html>
+    <head>
+        <link rel="stylesheet" href="stylesheets/style.css">
+        <script src="javascripts/home.js" defer></script>
+        <title>Retro Arcade - Match History</title>
+    </head>
+    <body class="match-history-page" onload="load_matches()">
+        <div class="top-bar">
+            <button onclick="login()" id="login-btn" class="auth-button">Login</button>
+            <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
+            <div id="user-info" class="user-info"></div>
+        </div>
+        
+        <div class="container">
+            <h1>Match History</h1>
+            
+            <nav class="menu">
+                <button onclick="goHome()" class="menu-button">Home</button>
+                <button onclick="viewFriends()" class="menu-button">Friends</button>
+            </nav>
 
-<head>
-  <link rel="stylesheet" href="stylesheets/style.css">
-  <script src="javascripts/home.js" defer></script>
-
-</head>
-
-<body onload="load_matches()">
-
-    <div class="top-bar">
-        <button onclick="login()" id="login-btn" class="auth-button">Login</button>
-        <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
-        <div id="user-info" class="user-info"></div>    
-    </div>
-    <p id="match_history"></p>
-</body>
-
+            <div class="match-history-section">
+                <div id="match-stats-container" class="match-stats"></div>
+                <div id="match-history-container" class="match-history-list"></div>
+            </div>
+        </div>
+    </body>
 </html>
