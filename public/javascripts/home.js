@@ -6,6 +6,71 @@ async function logout(){
     window.location = "/signout";
 }
 
+
+function showJoinLobbyInput() {
+    document.getElementById('join-lobby-btn').style.display = 'none';
+    document.getElementById('pinInputContainer').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+}
+
+function hideJoinLobbyInput() {
+    document.getElementById('join-lobby-btn').style.display = 'block';
+    document.getElementById('pinInputContainer').style.display = 'none';
+}
+
+async function submitJoinLobbyPin() {
+    const pin = document.getElementById('pinInput').value;
+    if (!pin || pin.length !== 6) {
+        alert('Please enter a valid 6-digit PIN.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/v1/users/whoami');
+        const joinLobbyResponse = await fetch('/api/v1/lobbies/join', {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pin })
+        });
+
+        if (!joinLobbyResponse.ok) {
+            alert('Failed to join lobby. The PIN may be invalid or the lobby is full.');
+            return;
+        }
+
+        const lobbyInfo = await joinLobbyResponse.json();
+        // Immediately redirect to the game page
+        window.location.href = `/index.html?lobbyId=${lobbyInfo.lobbyId}`;
+
+    } catch (error) {
+        console.error('Error in submitJoinLobbyPin:', error);
+        alert('An error occurred while joining the lobby.');
+    }
+}
+
+
+async function MakeLobby() {
+    try {
+        const createLobbyResponse = await fetch('/api/v1/lobbies/create', {
+            method: "POST"
+        });
+
+        if (!createLobbyResponse.ok) {
+            alert('Failed to create lobby on the server. Please try again.');
+            return;
+        }
+
+        const lobbyInfo = await createLobbyResponse.json();
+        // Immediately redirect to the game page, passing both lobbyId and pin
+        window.location.href = `/index.html?lobbyId=${lobbyInfo.lobbyId}&pin=${lobbyInfo.pin}`;
+
+    } catch (error) {
+        console.error('Error in MakeLobby function:', error);
+        alert('An error occurred while creating the lobby.');
+    }
+}
+
 async function userState(){
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -22,7 +87,7 @@ async function userState(){
         logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
         
         if (isLoggedIn) {
-            const userName = userjson.userInfo.username ;
+            const userName = userjson.userInfo.username;
             userInfo.innerHTML = `<span class="user-name">Welcome, ${userName}!</span>`;
             userInfo.style.display = 'block';
         } else {
@@ -189,4 +254,5 @@ async function load_matches(){
 window.addEventListener('DOMContentLoaded', () => {
     userState();
 });
+
 
