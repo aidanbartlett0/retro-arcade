@@ -340,11 +340,11 @@ const gameLoop = setInterval(() => {
             
             state.ball.dx *= -1; // Serve to the other player
         
-        if (state.score.player1 >= 2) {
+        if (state.score.player1 >= 5) {
             state.gameplay.is_playing = false;
             state.gameplay.winning_player = lobby.players[0].playerId
             saveMatchResult(lobby);
-         } else if (state.score.player2 >= 2) {
+         } else if (state.score.player2 >= 5) {
             state.gameplay.is_playing = false;
             state.gameplay.winning_player = lobby.players[1].playerId
             saveMatchResult(lobby);
