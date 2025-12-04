@@ -131,6 +131,61 @@ async function viewMatchHistory() {
     }
 }
 
+async function loadLeaderboard(){
+    try{
+        const response = await fetch('/api/v1/users/leaderboard');
+        const leaderboardJson = await response.json();
+        console.log('Leaderboard:', leaderboardJson);
+        
+        let leaderboardContainer = document.getElementById('home-leaderboard-container');
+        
+        if (leaderboardJson.leaderboard && leaderboardJson.leaderboard.length > 0) {
+            let currentUsername = null;
+            try {
+                const userResponse = await fetch('/api/v1/users/whoami');
+                const userJson = await userResponse.json();
+                if (userJson.status === 'loggedin') {
+                    currentUsername = userJson.userInfo.username;
+                }
+            } catch (error) {
+                console.log('Could not fetch current user info');
+            }
+            
+
+            const topPlayers = leaderboardJson.leaderboard.slice(0, 10);
+            
+            leaderboardContainer.innerHTML = `
+                <div class="home-leaderboard-header">
+                    <div class="home-leaderboard-header-item">Rank</div>
+                    <div class="home-leaderboard-header-item">Username</div>
+                    <div class="home-leaderboard-header-item">Score</div>
+                </div>
+                ${topPlayers.map(entry => {
+                    const isCurrentUser = currentUsername && entry.username === currentUsername;
+                    const rankClass = entry.rank === 1 ? 'rank-gold' : entry.rank === 2 ? 'rank-silver' : entry.rank === 3 ? 'rank-bronze' : '';
+                    const userClass = isCurrentUser ? 'current-user-entry' : '';
+                    
+                    return `
+                        <div class="home-leaderboard-entry ${rankClass} ${userClass}">
+                            <div class="home-leaderboard-rank">
+                                ${entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
+                            </div>
+                            <div class="home-leaderboard-username">${entry.username}</div>
+                            <div class="home-leaderboard-score">${entry.score.toFixed(2)}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        } else {
+            leaderboardContainer.innerHTML = '<div class="no-leaderboard">No rankings yet. Play games to see the leaderboard!</div>';
+        }
+    } catch(error){
+        let leaderboardContainer = document.getElementById('home-leaderboard-container');
+        leaderboardContainer.innerHTML = '<div class="no-leaderboard">Unable to load leaderboard. Please try again later.</div>';
+        console.log({error: error});
+    }
+}
+
 async function load_matches(){
     try{
         userState()
@@ -252,6 +307,7 @@ async function load_matches(){
 
 window.addEventListener('DOMContentLoaded', () => {
     userState();
+    loadLeaderboard();
 });
 
 

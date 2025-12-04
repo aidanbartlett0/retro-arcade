@@ -37,13 +37,23 @@ router.post('/stop', async function(req, res, next){
             
             let winner = null;
             let winner_username;
+            let loser = null;
+            let winnerScore = 0;
+            let loserScore = 0;
+            
             if (leftScore > rightScore){
                 winner = leftUser._id
                 winner_username = leftUser.username
+                loser = rightUser._id
+                winnerScore = leftScore;
+                loserScore = rightScore;
             }
             else if (rightScore > leftScore){
                 winner = rightUser._id;
                 winner_username = rightUser.username
+                loser = leftUser._id;
+                winnerScore = rightScore;
+                loserScore = leftScore;
             }
 
             const matchDoc = new req.models.Match({
@@ -55,6 +65,21 @@ router.post('/stop', async function(req, res, next){
             });
             leftUser.matchHistory.push(matchDoc._id);
             rightUser.matchHistory.push(matchDoc._id);
+            
+            if (winner) {
+                const scoreDifferential = winnerScore - loserScore;
+                // Rank increase = 1 * inverse of score differential
+                // If differential is 0 (shouldn't happen with a winner), default to 1
+                const rankIncrease = scoreDifferential > 0 ? 1 / scoreDifferential : 1;
+                
+                // Get the winner user object
+                const winnerUser = winner.equals(leftUser._id) ? leftUser : rightUser;
+                if (winnerUser.rank === undefined || winnerUser.rank === null) {
+                    winnerUser.rank = 0;
+                }
+                winnerUser.rank += rankIncrease;
+            }
+            
             await leftUser.save();
             await rightUser.save();
         
