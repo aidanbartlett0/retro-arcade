@@ -107,7 +107,7 @@ function goHome() {
 }
 
 function startGame() {
-    window.location.href = '/index.html';
+    window.location.href = '/local.html';
 }
 
 async function viewFriends() {
