@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="stylesheets/style.css">
+        <script src="javascripts/leaderboard.js" defer></script>
+        <title>Retro Arcade - Leaderboard</title>
+    </head>
+    <body class="leaderboard-page" onload="loadLeaderboard()">
+        <div class="top-bar">
+            <button onclick="login()" id="login-btn" class="auth-button">Login</button>
+            <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
+            <div id="user-info" class="user-info"></div>
+        </div>
+        
+        <div class="container">
+            <h1>Global Leaderboard</h1>
+            
+            <nav class="menu">
+                <button onclick="goHome()" class="menu-button">Home</button>
+                <button onclick="viewFriends()" class="menu-button">Friends</button>
+                <button onclick="viewMatchHistory()" class="menu-button">Match History</button>
+            </nav>
+
+            <div class="leaderboard-section">
+                <div id="leaderboard-container" class="leaderboard-list"></div>
+            </div>
+        </div>
+    </body>
+</html>
+

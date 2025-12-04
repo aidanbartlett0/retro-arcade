@@ -53,7 +53,8 @@ const userSchema = new mongoose.Schema({
   friendRequests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  rank: { type: Number, default: 0 }
 })
 
 models.Match = mongoose.model('Match', matchSchema)

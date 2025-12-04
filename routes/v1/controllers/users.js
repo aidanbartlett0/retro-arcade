@@ -303,4 +303,26 @@ router.post('/friends/requests/deny', async function(req, res, next){
   }
 })
 
+router.get('/leaderboard', async function(req, res, next){
+  try {
+    const users = await req.models.User.find({})
+      .sort({ rank: -1 })
+      .limit(10) 
+      .select('username firstName lastName rank');
+    
+    const leaderboard = users.map((user, index) => ({
+      rank: index + 1,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      score: user.rank || 0
+    }));
+    
+    res.json({status: 'success', leaderboard: leaderboard});
+  } catch(error) {
+    res.status(500).json({status: 'error', error: error.message});
+    console.log(error);
+  }
+})
+
 export default router;
