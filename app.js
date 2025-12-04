@@ -89,7 +89,6 @@ app.get('/signout', (req, res, next) => {
 
 app.use(authProvider.interactionErrorHandler());
 
-// HTTP and WebSocket servers
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
@@ -97,10 +96,9 @@ const wss = new WebSocketServer({ noServer: true });
 server.on('upgrade', (request, socket, head) => {
     // Parse session from request
     sessionMiddleware(request, {}, () => {
-        // FIXME: AUTH BYPASS
-        // Use session ID as player ID.
-        if (!request.session.id) {
-            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+
+        if (!request.session.isAuthenticated) {
+            socket.write('Unathorized\r\n');
             socket.destroy();
             return;
         }
@@ -120,7 +118,6 @@ wss.on('connection', (ws, request) => {
     console.log(`Player ${playerId} established a WebSocket connection.`);
 
     ws.on('message', (message) => {
-        console.log(`--- MESSAGE EVENT FIRED for player ${ws.playerId} ---`);
         try {
             const data = JSON.parse(message);
             console.log(`Message from ${ws.playerId}:`, data);
@@ -189,7 +186,6 @@ wss.on('connection', (ws, request) => {
 
     ws.on('close', () => {
         console.log(`Player ${ws.playerId} disconnected.`);
-        // Find which lobby the player was in and mark them as disconnected.
         for (const lobbyId in activeLobbies) {
             const lobby = activeLobbies[lobbyId];
             const player = lobby.players.find(p => p.playerId === ws.playerId);
@@ -239,6 +235,8 @@ async function saveMatchResult(lobby) {
         console.log(player1Id)
         const all = await models.User.find({});
         console.log('All users in DB:', all.map(u => u.username));
+        console.log(`player 1 username: ${player1Id}, player 2 username: ${player2Id}, winner username: ${winningPlayerUsername}`);
+        console.log(`player 1 id: ${p1_id}, player 2 id: ${p2_id}, winner id: ${winner_id}`);
 
         if (!p1 || !p2) {
             console.error(`Could not find one or both users to save match result. Player1: ${player1Id}, Player2: ${player2Id}`);
