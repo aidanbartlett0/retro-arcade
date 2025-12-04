@@ -75,7 +75,7 @@ async function loadPublicLobbies() {
         container.innerHTML = publicLobbies.map(lobby => `
             <div class="public-lobby-card">
                 <div>
-                    <p><strong>Lobby ID:</strong> ${lobby.lobbyId}</p>
+                    <p><strong>Lobby Host:</strong> ${lobby.host}</p>
                     <p><strong>Players:</strong> ${lobby.playerCount}/2</p>
                 </div>
                 <button onclick="joinPublicLobby('${lobby.pin}')">Join</button>

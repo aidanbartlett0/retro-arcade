@@ -7,6 +7,7 @@ var router = express.Router();
 
 router.get('/public', (req, res) => {
     const publicLobbyList = Object.values(publicLobbies).map(lobby => ({
+        host: lobby.players[0]?.playerId || 'Unknown',
         lobbyId: lobby.lobbyId,
         pin: lobby.pin,
         playerCount: lobby.players.length
