@@ -130,6 +130,7 @@ wss.on('connection', (ws, request) => {
                 case 'joinGame': 
                     const lobby = activeLobbies[data.lobbyId];
                     if (lobby) {
+                        lobby.lastActivity = Date.now();
                         const player = lobby.players.find(p => p.playerId === ws.playerId);
                         if (player) {
                             player.ws = ws; 
@@ -209,7 +210,18 @@ wss.on('connection', (ws, request) => {
         for (const lobbyId in activeLobbies) {
             const lobby = activeLobbies[lobbyId];
             const player = lobby.players.find(p => p.playerId === ws.playerId);
-
+            const playerIndex = lobby.players.findIndex(p => p.playerId === ws.playerId);
+            if (playerIndex !== -1) {
+                console.log(`Removing player ${ws.playerId} from lobby ${lobbyId}.`);
+                lobby.players.splice(playerIndex, 1); // remove from array
+    
+                if (lobby.players.length === 0) {
+                    delete activeLobbies[lobbyId];
+                    delete publicLobbies[lobbyId]; // remove from public if applicable
+                    console.log(`Lobby ${lobbyId} deleted because it is empty.`);
+                }
+                break
+            }
             if (player) {
                 console.log(`Marking player ${ws.playerId} as disconnected in lobby ${lobbyId}.`);
                 player.ws = null; 

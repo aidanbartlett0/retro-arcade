@@ -37,6 +37,7 @@ router.post('/create', (req,res) => {
         activeLobbies[lobbyId] = {
             lobbyId: lobbyId,
             pin: pin,
+            lastActivity: Date.now(),
             players: [{ playerId: playerId, ws: null, paddle: 'left' }],
             gameState: {
                 leftPaddle: {
