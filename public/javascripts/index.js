@@ -1,11 +1,7 @@
-// ==================================
-//          CLIENT-SIDE GAME CODE
-// ==================================
 
-// This variable will hold the most recent game state from the server
 let latestGameState = {};
-let ws; // Will hold our WebSocket connection
-let lobbyId; // Will hold our lobby ID
+let ws;
+let lobbyId; 
 
 // Get the canvas and its context
 const canvas = document.getElementById('game');
@@ -14,7 +10,6 @@ const grid = 15;
 
 // This function starts the whole process
 function init() {
-    // 1. GET LOBBY ID AND PIN FROM URL
     const urlParams = new URLSearchParams(window.location.search);
     lobbyId = urlParams.get('lobbyId'); // Assign to the global variable
     const pin = urlParams.get('pin'); // Get the pin if it exists
@@ -49,7 +44,6 @@ function init() {
 
         const message = JSON.parse(event.data);
 
-        // Check for special message types
         if (message.type === 'gameStart') {
             const matchInfo = document.getElementById('match-info');
             if (matchInfo) {
@@ -73,8 +67,10 @@ function init() {
         console.error('WebSocket error:', error);
     };
 
+    // 4. START THE RENDERING LOOP
     requestAnimationFrame(loop);
 }
+
 
 
 function loop() {
@@ -89,13 +85,11 @@ function loop() {
     if (leftScore) leftScore.innerText = latestGameState.score.player1;
     if (rightScore) rightScore.innerText = latestGameState.score.player2;
 
-    // GAME IS EDNED HERE SO WE SAVE THE GAME AND REDIRECT TO HOME
-    if (latestGameState.winning_player) {
-        document.getElementById('match-info').innerText = `GAME FINISHED - CONGRATS ${latestGameState.winning_player.toUpperCase()}! YOU WIN!`;
-            setTimeout(() => {
-                window.location.href = '/home.html';
-            }, 2000);
-        };
+    if (latestGameState.gameplay.winning_player) {
+        document.getElementById('match-info').innerText = `GAME FINISHED - CONGRATS ${latestGameState.gameplay.winning_player.toUpperCase()}! YOU WIN!`;
+        setTimeout(() => {
+            window.location.href = '/home.html';
+        }, 4000);
         return;
     }
 
@@ -124,7 +118,7 @@ function loop() {
         latestGameState.ball.height
     );
 
-    
+    // Draw aesthetic elements (walls, center line)
     context.fillStyle = 'lightgrey';
     context.fillRect(0, 0, canvas.width, grid);
     context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
@@ -132,6 +126,7 @@ function loop() {
         context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
     }
 }
+
 
 
 const keysPressed = {

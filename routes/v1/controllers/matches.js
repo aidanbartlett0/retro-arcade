@@ -42,26 +42,6 @@ router.get('/history', async function(req, res, next) {
       return res.status(500).json({ error: "Server error", detail: error });
     }
   });
-  
-// const matchSchema = new mongoose.Schema({
-//   player1: { 
-//     type: mongoose.Schema.Types.ObjectId, 
-//     ref: 'User'
-//   },
-//   player2: { 
-//     type: mongoose.Schema.Types.ObjectId, 
-//     ref: 'User'
-//   },
-//   score: {
-//     player1: { type: Number, default: 0 },
-//     player2: { type: Number, default: 0 }
-//   },
-//   winner: { 
-//     type: mongoose.Schema.Types.ObjectId, 
-//     ref: 'User'
-//   },
-//   date: Date
-// })
 
 router.post('/saveGame', async (req,res) => {
     
@@ -92,23 +72,5 @@ router.post('/saveGame', async (req,res) => {
     }
 
 })
-
-
-
-// const leftUser = await req.models.User.findOne({username: 'eviluser'})
-// const rightUser = await req.models.User.findOne({ username: rightPlayer });
-// const matchDoc = new req.models.Match({
-//               player1: leftUser._id,
-//               player2: rightUser._id,
-//               score: { player1: leftScore, player2: rightScore },
-//               winner: winner,
-//               date: new Date()
-//             });
-//             leftUser.matchHistory.push(matchDoc._id);
-//             rightUser.matchHistory.push(matchDoc._id);
-//             await leftUser.save();
-//             await rightUser.save();
-        
-//             await matchDoc.save();
 
 export default router;

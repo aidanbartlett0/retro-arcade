@@ -55,6 +55,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// Session middleware for WebSockets
 const sessionMiddleware = sessions({
     secret: process.env.EXPRESS_SESSION_SECRET,
     saveUninitialized: true,
@@ -98,29 +99,28 @@ server.on('upgrade', (request, socket, head) => {
     sessionMiddleware(request, {}, () => {
         // FIXME: AUTH BYPASS
         // Use session ID as player ID.
-        if (!request.session.isAuthenticated) { // CHANGED
+        if (!request.session.id) {
             socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
             socket.destroy();
             return;
         }
         
-        console.log("HEREEEEEEE")
+        // Upgrade to WebSocket
         wss.handleUpgrade(request, socket, head, (ws) => {
             wss.emit('connection', ws, request);
         });
-        console.log("HEREEEEEEE2")
-
     });
 });
 
 // WebSocket connection handler
 wss.on('connection', (ws, request) => {
-
-    const playerId = request.session.account.username; // Original MSAL line
+    // Tag WebSocket with player ID
+    const playerId = request.session.account.username; 
     ws.playerId = playerId;
     console.log(`Player ${playerId} established a WebSocket connection.`);
 
     ws.on('message', (message) => {
+        console.log(`--- MESSAGE EVENT FIRED for player ${ws.playerId} ---`);
         try {
             const data = JSON.parse(message);
             console.log(`Message from ${ws.playerId}:`, data);
@@ -139,6 +139,7 @@ wss.on('connection', (ws, request) => {
                             console.log(`Player ${ws.playerId} not found in lobby ${data.lobbyId} during ${data.action}.`);
                         }
 
+                        // Check if the lobby is now full and ready to start
                         const isLobbyFull = lobby.players.length === 2;
                         const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1); 
 
@@ -223,10 +224,21 @@ async function saveMatchResult(lobby) {
     try {
         const player1Id = lobby.players[0].playerId;
         const player2Id = lobby.players[1].playerId;
-        const winningPlayerId = lobby.gameState.gameplay.winning_player;
+        const winningPlayerUsername = lobby.gameState.gameplay.winning_player;
 
-        const p1 = await models.User.findOne({ username: player1Id });
-        const p2 = await models.User.findOne({ username: player2Id });
+        let winner_id = await models.User.findOne({ username: winningPlayerUsername });
+        winner_id = winner_id._id
+
+        let p1 = await models.User.findOne({ username: player1Id });
+        let p1_id = p1._id
+        let p2 = await models.User.findOne({ username: player2Id });
+        let p2_id = p2._id
+
+        const match_history_before = await models.Match.find({})
+        console.log(`mathc history before: ${JSON.stringify(match_history_before)}`)
+        console.log(player1Id)
+        const all = await models.User.find({});
+        console.log('All users in DB:', all.map(u => u.username));
 
         if (!p1 || !p2) {
             console.error(`Could not find one or both users to save match result. Player1: ${player1Id}, Player2: ${player2Id}`);
@@ -238,7 +250,7 @@ async function saveMatchResult(lobby) {
             player1: p1._id,
             player2: p2._id,
             score: lobby.gameState.score,
-            winner: winningPlayerId,
+            winner: winner_id,
             date: new Date()
         });
 
@@ -248,6 +260,9 @@ async function saveMatchResult(lobby) {
         await p1.save();
         await p2.save();
         await matchDoc.save();
+        const match_history = await models.Match.find({})
+        console.log(`mathc history: ${JSON.stringify(match_history)}`)
+        console.log('All matches in DB:', match_history);
         console.log(`Match result for lobby ${lobby.lobbyId} saved successfully.`);
 
     } catch (err) {
@@ -269,10 +284,6 @@ const gameLoop = setInterval(() => {
         const lobby = activeLobbies[lobbyId];
         const state = lobby.gameState;
 
-        if (!state.gameplay.is_playing) {  
-            continue;
-        }
-
         const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1);
 
         // More robust check: only run the loop if 2 players are present AND fully connected via WebSocket
@@ -280,10 +291,15 @@ const gameLoop = setInterval(() => {
             continue;
         }
 
+        if (!state.gameplay.is_playing) {
+            continue;
+        }
 
+        // 1. UPDATE PADDLE POSITIONS
         state.leftPaddle.y += state.leftPaddle.dy;
         state.rightPaddle.y += state.rightPaddle.dy;
 
+        // Prevent paddles from going through walls
         [state.leftPaddle, state.rightPaddle].forEach(paddle => {
             if (paddle.y < grid) {
                 paddle.y = grid;
@@ -292,6 +308,7 @@ const gameLoop = setInterval(() => {
             }
         });
 
+        // 2. UPDATE BALL POSITION
         if (state.ball.resetting) continue;
 
         state.ball.x += state.ball.dx;
@@ -311,6 +328,7 @@ const gameLoop = setInterval(() => {
             state.ball.x = state.rightPaddle.x - state.ball.width;
         }
         
+        // 3. HANDLE SCORING
         if (state.ball.x < 0 || state.ball.x > canvasWidth) {
             if (state.ball.x > canvasWidth) {
                 state.score.player1++;
@@ -318,45 +336,42 @@ const gameLoop = setInterval(() => {
                 state.score.player2++;
             }
 
-            if (state.score.player1 >= 2) {
-                state.winning_player = lobby.players[0].playerId;
-                state.gameplay.is_playing = false;
-            }
-
-            if (state.score.player2 >= 2) {
-                state.winning_player = lobby.players[1].playerId;
-                state.gameplay.is_playing = false;
-            }
-
-            
-
             state.ball.resetting = true;
             state.ball.x = canvasWidth / 2;
             state.ball.y = canvasHeight / 2;
             
-            state.ball.dx *= -1; 
-            
+            state.ball.dx *= -1; // Serve to the other player
+        
+        if (state.score.player1 >= 2) {
+            state.gameplay.is_playing = false;
+            state.gameplay.winning_player = lobby.players[0].playerId
+            saveMatchResult(lobby);
+         } else if (state.score.player2 >= 2) {
+            state.gameplay.is_playing = false;
+            state.gameplay.winning_player = lobby.players[1].playerId
+            saveMatchResult(lobby);
+         }
             setTimeout(() => {
                 if (activeLobbies[lobbyId]) {
                     activeLobbies[lobbyId].gameState.ball.resetting = false;
                 }
             }, 500);
         }
-        if (!state.gameplay.is_playing && state.winning_player) {
-                // try {
-                    const ending_game_state = {
-                        lobbyId: lobbyId, 
-                        winning_player: state.winning_player, 
-                        score: state.score, 
-                        player1: lobby.players[0].playerId,
-                        player2: lobby.players[1].playerId,
-                        ball: state.ball
-                }
-                saveMatchResult(lobby);
-            // } catch(err) {
-            //     console.error('Error saving match result:', err);
-            // }
-        } 
+        // if (!state.gameplay.is_playing && state.winning_player) {
+        //         // try {
+        //             const ending_game_state = {
+        //                 lobbyId: lobbyId, 
+        //                 winning_player: state.winning_player, 
+        //                 score: state.score, 
+        //                 player1: lobby.players[0].playerId,
+        //                 player2: lobby.players[1].playerId,
+        //                 ball: state.ball
+        //         }
+        //         saveMatchResult(lobby);
+        //     // } catch(err) {
+        //     //     console.error('Error saving match result:', err);
+        //     // }
+        // } 
         const newState = JSON.stringify(state);
         lobby.players.forEach(player => {
             if (player.ws && player.ws.readyState === 1) {

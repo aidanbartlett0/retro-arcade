@@ -8,8 +8,8 @@ var router = express.Router();
 router.post('/create', (req,res) => {
 
     if (req.session.isAuthenticated) { // Temporarily commented out for testing
-        const playerId = req.session.account.username; // Using session ID for temporary player ID
-        // const playerId = req.session.account.username;
+        // const playerId = req.session.id; // Using session ID for temporary player ID
+        const playerId = req.session.account.username;
         const lobbyId = crypto.randomUUID();
         let pin;
         do {
@@ -57,23 +57,23 @@ router.post('/create', (req,res) => {
                     player2: 0
                 },
                 gameplay: {
-                    is_playing: false, 
-                    winning_player: null
+                    is_playing: false,
+                    winning_player: null // Will be set to true when game loop starts for this lobby
                 }
             }
         };
  
-        console.log(`Lobby created: ID=${lobbyId}, PIN=${pin}, payersInLobby=${JSON.stringify(activeLobbies[lobbyId].players)}`);
-        console.log(activeLobbies[lobbyId].players[0])
+        console.log(`Lobby created: ID=${lobbyId}, PIN=${pin}`);
+ 
         // Send the PIN and lobbyId back to the client
         res.status(201).json({ pin: pin, lobbyId: lobbyId });
-     } else {
-         res.status(401).json({ error: 'User not authenticated' });
-     }
+    } else {
+        res.status(401).json({ error: 'User not authenticated' });
+    }
 })
 
 router.post('/join', (req,res) => {
-    // if (req.session.isAuthenticated) { // Temporarily commented out for testing
+    if (req.session.isAuthenticated) { 
         const { pin } = req.body;
         console.log(`---`);
         console.log(`Join attempt with PIN: "${pin}"`);
@@ -94,19 +94,20 @@ router.post('/join', (req,res) => {
 
         const playerId = req.session.account.username; // Using session ID for temporary player ID
         
+        // Prevent the same session from joining twice
         if (lobby.players.some(p => p.playerId === playerId)) {
             return res.status(409).json({ error: 'You are already in this lobby' });
         }
         
-        lobby.players.push({ playerId: playerId, ws: null, paddle: 'right' }); 
+        lobby.players.push({ playerId: playerId, ws: null, paddle: 'right' }); // Assign right paddle to joiner
 
         console.log(`Player ${playerId} joined lobby ${lobbyId}`);
         
         // Respond with the lobbyId
         res.status(200).json({ lobbyId: lobbyId });
-    // } else {
-    //     res.status(401).json({ error: 'User not authenticated' });
-    // }
+    } else {
+        res.status(401).json({ error: 'User not authenticated' });
+    }
 })
 
 
