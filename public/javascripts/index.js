@@ -8,8 +8,25 @@ const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 const grid = 15;
 
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+async function countdown(n, started = false) {
+    const timer = document.getElementById('match-timer');
+    for (let i = n; i > 0; i--) {
+        timer.innerText = i;
+        await sleep(1000);
+    }
+    if(!started){
+        timer.innerText = 'PLAY';
+        await sleep(1000);
+    }
+}
+
 // This function starts the whole process
-function init() {
+async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     lobbyId = urlParams.get('lobbyId'); // Assign to the global variable
     const pin = urlParams.get('pin'); // Get the pin if it exists
@@ -39,24 +56,34 @@ function init() {
         }));
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
 
         const message = JSON.parse(event.data);
         console.log('Received message:', message);
         if (message.type === 'gameStart') {
             const matchInfo = document.getElementById('match-info');
-            const leftPlayerName = document.getElementById('player-left-name');
-            const rightPlayerName = document.getElementById('player-right-name');
-            if (leftPlayerName) leftPlayerName.innerText = message.leftPlayer;
-            if (rightPlayerName) rightPlayerName.innerText = message.rightPlayer;
     
-            // if (matchInfo) {
-            //     matchInfo.innerText = 'First to 5. Have Fun!';
-            // }
+            if (matchInfo) {
+                matchInfo.innerText = 'First to 5. Have Fun!';
+            }
         } else if (message.type === 'opponentDisconnected') {
             alert('Your opponent has disconnected.');
             window.location.href = '/home.html';
-        } else {
+        } else if(message.type === 'countdown') {
+            const matchInfo = document.getElementById('match-info');
+            const match_timer = document.getElementById('match-timer');
+            if (matchInfo) {
+                matchInfo.innerText = `Game starting ...`;
+                match_timer.innerText = `${message.seconds}`;
+                const leftPlayerName = document.getElementById('player-left-name');
+                const rightPlayerName = document.getElementById('player-right-name');
+                leftPlayerName.innerText = message.leftPlayer;
+                rightPlayerName.innerText = message.rightPlayer;    
+                await countdown(message.seconds, false);
+            }
+
+        }
+        else {
             latestGameState = message;
         }
     };

@@ -143,12 +143,43 @@ wss.on('connection', (ws, request) => {
 
                         if (isLobbyFull && arePlayersConnected) {
                             // Ensure the game state is marked as playing
-                            lobby.gameState.gameplay.is_playing = true;
+                            // lobby.gameState.gameplay.is_playing = true;
                             console.log(`Lobby ${lobby.lobbyId} is full and all players connected. Starting game.`);
                             // Notify both players that the game is starting
+                            const leftPlayer = lobby.players.find(p => p.paddle === "left");
+                            const rightPlayer = lobby.players.find(p => p.paddle === "right");
                             lobby.players.forEach(p => {
-                                p.ws.send(JSON.stringify({ type: 'gameStart' }));
+                                p.ws.send(JSON.stringify({
+                                    type: "countdown",
+                                    seconds: 5,
+                                    leftPlayer: leftPlayer.playerId ,
+                                    rightPlayer: rightPlayer.playerId 
+                                }));
                             });
+                            setTimeout(() => {
+                                lobby.gameState.gameplay.is_playing = true;
+                            
+                                lobby.players.forEach(p => {
+                                    p.ws.send(JSON.stringify({ type: "gameStart" }));
+                                });
+                            }, 5000);
+                                                                                        
+
+                            // lobby.players.forEach(p => {
+                            //     p.ws.send(JSON.stringify(
+                            //         { 
+                            //             type: 'gameStart',         
+                            //             leftPlayer: {
+                            //                 username: leftPlayer.playerId,
+                            //                 paddle: 'left'
+                            //             },
+                            //             rightPlayer: {
+                            //                 username: rightPlayer.playerId,
+                            //                 paddle: 'right'
+                            //             }
+                            //         }
+                            //     ));
+                            // });
                         } else {
                             console.log(`Lobby ${lobby.lobbyId} is waiting for players. Current count: ${lobby.players.length}. Connected: ${lobby.players.filter(p => p.ws && p.ws.readyState === 1).length}`);
                         }
@@ -269,6 +300,22 @@ async function saveMatchResult(lobby) {
     }
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+async function countdown(n, started = false) {
+const timer = document.getElementById('match-timer');
+for (let i = n; i > 0; i--) {
+    timer.innerText = i;
+    await sleep(1000);
+}
+if(!started){
+    timer.innerText = 'PLAY';
+    await sleep(1000);
+}
+}
+  
 
 // The main Authoritative Game Loop
 const gameLoop = setInterval(() => {
