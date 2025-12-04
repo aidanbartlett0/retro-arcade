@@ -16,9 +16,9 @@ async function logout(){
 
 async function userState(){
     let whoami = await fetch('/api/v1/users/whoami')
-    console.log(whoami)
+    // console.log(whoami)
     userjson = await whoami.json();
-    console.log(userjson)
+    // console.log(userjson)
     if (userjson) {
     document.getElementById('userState').innerText = JSON.stringify(userjson)
     }
@@ -283,9 +283,9 @@ async function updateScore(){
       method: "GET"
     })
     let scores = await responseJson.json();
-    console.log(scores);
-    console.log(scores['left'])
-    console.log(scores.left)
+    // console.log(scores);
+    // console.log(scores['left'])
+    // console.log(scores.left)
     let rightScore = document.getElementById('player-right-score')
     let leftScore = document.getElementById('player-left-score')
     rightScore.innerText = scores.right

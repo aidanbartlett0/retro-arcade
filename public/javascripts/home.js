@@ -79,7 +79,6 @@ async function userState(){
     try {
         const response = await fetch('/api/v1/users/whoami');
         const userjson = await response.json();
-        console.log('User state:', userjson);
         
         const isLoggedIn = userjson.status === 'loggedin' && userjson.userInfo;
         
@@ -141,7 +140,7 @@ async function load_matches(){
     
         response = await fetch(`/api/v1/matches/history`)
         const matchjson = await response.json();
-        console.log('match history:', matchjson);  
+        // console.log('match history:', matchjson);  
         
         let statsContainer = document.getElementById('match-stats-container');
         if (matchjson.matches && matchjson.matches.length > 0) {

@@ -14,7 +14,7 @@ async function userState(){
     try {
         const response = await fetch('/api/v1/users/whoami');
         const userjson = await response.json();
-        console.log('User state:', userjson);
+        // console.log('User state:', userjson);
         
         const isLoggedIn = userjson.status === 'loggedin' && userjson.userInfo;
         

@@ -40,7 +40,6 @@ function init() {
     };
 
     ws.onmessage = (event) => {
-        console.log('Received data from server:', event.data);
 
         const message = JSON.parse(event.data);
 
