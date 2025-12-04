@@ -42,12 +42,17 @@ function init() {
     ws.onmessage = (event) => {
 
         const message = JSON.parse(event.data);
-
+        console.log('Received message:', message);
         if (message.type === 'gameStart') {
             const matchInfo = document.getElementById('match-info');
-            if (matchInfo) {
-                matchInfo.innerText = 'First to 5. Have Fun!';
-            }
+            const leftPlayerName = document.getElementById('player-left-name');
+            const rightPlayerName = document.getElementById('player-right-name');
+            if (leftPlayerName) leftPlayerName.innerText = message.leftPlayer;
+            if (rightPlayerName) rightPlayerName.innerText = message.rightPlayer;
+    
+            // if (matchInfo) {
+            //     matchInfo.innerText = 'First to 5. Have Fun!';
+            // }
         } else if (message.type === 'opponentDisconnected') {
             alert('Your opponent has disconnected.');
             window.location.href = '/home.html';

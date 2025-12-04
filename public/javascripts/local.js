@@ -222,9 +222,18 @@ async function init(){
   let session_start = await fetch('api/v1/game/start', {
       method: "POST"
   })
+  let data = await session_start.json();
+  console.log('response data:', data);
+
+  console.log(session_start)
   if (session_start.status == 401) {
     alert('not logged in, cannot start game')
   } else {
+    let rightName = document.getElementById('player-right-name')
+    let leftName = document.getElementById('player-left-name')
+    rightName.innerText = data.players.right
+    leftName.innerText = data.players.left
+
     console.log('game started')
     await updateScore()
     await countdown(5, false)

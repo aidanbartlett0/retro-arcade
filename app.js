@@ -22,6 +22,7 @@ const authConfig = {
         authority: process.env.CLOUD_INSTANCE + process.env.TENANT_ID,
         clientSecret: process.env.CLIENT_SECRET,
         redirectUri: "/redirect"
+        // redirectUri: "https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/redirect"
     },
 	system: {
     	loggerOptions: {

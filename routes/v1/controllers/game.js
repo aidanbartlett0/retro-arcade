@@ -12,7 +12,7 @@ router.post('/start', async function(req, res, next){
                 players: { left: 'eviluser', right: req.session.account.username }
             }
             console.log(req.session.game)
-            return res.status(200).json({status: 'game started'})
+            return res.status(200).json({status: 'game started', players: req.session.game.players})
         }else {
             return res.status(401).json({status: 'loggedout', userInfo: 'There is no user for this session'})
         }
