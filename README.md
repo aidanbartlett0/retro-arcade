@@ -44,7 +44,7 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 ### Unimplemented:
 | Priority | User | Description | Technical Implementation |
 |---------|------|-------------|---------------------------|
-| **P2** | As a player | I want to rematch after game ends | Keep session active; allow rematching. |
+| **P3** | As a player | I want to rematch after game ends | Keep session active; allow rematching. |
 | **P3** | As a player | I want to see my match record against a specific user | Store per-user opponent stats. |
 | **P3** | As a player | I want to play ranked against players of similar skill | Implement ranked queue and rank-based lobbies. |
 | **P3** | As a player | I want to play in a tournament | Implement tournament structuring across multiple lobbies. |
