@@ -51,28 +51,25 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 
 ---
 
-## Possible Endpoints
+## Endpoints
 
 ### **Authentication & Session Management**
-- `POST /users` — Create a user account  
-- `POST /session` — Log in  
-- `DELETE /session` — Log out  
+- `POST /login` — Log in  
+- `DELETE /logout` — Log out  
 
 ### **User Management**
-- `GET /users/{id}` — Public profile  
-- `GET /users/{id}/profile` — Detailed profile  
-- `PATCH /users/{id}` — Update username/profile  
-- `DELETE /users/{id}` — Delete account  
-
-### **Friends Management**
-- `GET /users/{id}/friends` — Get friends  
-- `POST /users/{id}/friends` — Send friend request  
-- `DELETE /users/{id}/friends/{friendId}` — Remove friend  
+- GET /api/v1/users/whoami — Gets the current user's information if they are logged in.
+- POST /api/v1/users/changeUsername — Changes the username of the currently logged-in user.
+- POST /api/v1/users/friends/add — Sends a friend request to another user.
+- GET /api/v1/users/friends — Gets the list of the current user's friends.
+- POST /api/v1/users/friends/remove — Removes a friend from the current user's friend list.
+- GET /api/v1/users/friends/requests — Gets the list of pending friend requests for the current user.
+- POST /api/v1/users/friends/requests/accept — Accepts a friend request.
+- POST /api/v1/users/friends/requests/deny — Denies a friend request.
+- GET /api/v1/users/leaderboard — Gets the top 10 users for the leaderboard.  
 
 ### **Match History & Stats**
-- `GET /users/{id}/matches` — Match history  
-- `GET /users/{id}/matches/{opponentId}` — Head-to-head record  
-- `GET /users/{id}/stats` — Player stats  
+   - GET /api/v1/matches/history — Gets the match history for the currently logged-in user.  
 
 ### **Ranking & Leaderboards**
 - `GET /users/{id}/rank` — User rank  
@@ -80,12 +77,15 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 - `GET /leaderboard/friends` — Friends leaderboard  
 
 ### **Lobby Management**
-- `GET /lobbies` — All joinable lobbies  
-- `GET /lobbies/{id}` — Lobby details  
-- `GET /lobbies/public` — Public lobbies  
-- `GET /lobbies/ranked` — Ranked matchmaking  
-- `POST /lobbies` — Create a lobby  
-- `POST /lobbies/{id}/join` — Join lobby  
-- `PATCH /lobbies/{id}` — Update lobby settings  
-- `DELETE /lobbies/{id}` — Delete lobby  
-- `DELETE /lobbies/{id}/leave` — Leave lobby  
+- GET /api/v1/lobbies/public — Gets a list of all public lobbies.
+- POST /api/v1/lobbies/create — Creates a new lobby.
+- POST /api/v1/lobbies/join — Joins an existing lobby.
+
+### **Websocket Management**
+- Messages received = 
+  - `join_lobby` — Join a lobby  
+  - `leave_lobby` — Leave a lobby  
+  - `paddle_move` — Move paddle
+- Messages sent = 
+  - `game_state` — Current game state update  
+  - `lobby_update` — Lobby state update
