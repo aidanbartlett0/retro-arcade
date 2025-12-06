@@ -32,6 +32,7 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 | **P0** | As a player | I want to press arrow keys to move my paddle | Implement paddle movement + UI state. |
 | **P0** | As a player | I want to see the ball bounce and hit my paddle | Implement ball movement + collision logic. |
 | **P0** | As a player | I want score tracking and win/loss behavior | Implement game logic + static “bot” opponent. |
+| **P1** | As a player | I want to log in and customize my username | Set up Azure Authentication and Users table. |
 | **P1** | As a player | I want to see my game history | Create Games table and update on match end. |
 | **P2** | As a player | I want to add friends | Implement POST/GET endpoints for friend list. |
 | **P2** | As a player | I want to remove friends | Implement POST/GET endpoints for friend list. |
@@ -43,7 +44,6 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 ### Unimplemented:
 | Priority | User | Description | Technical Implementation |
 |---------|------|-------------|---------------------------|
-| **P1** | As a player | I want to log in and customize my username | Set up Azure Authentication and Users table. |
 | **P2** | As a player | I want to rematch after game ends | Keep session active; allow rematching. |
 | **P3** | As a player | I want to see my match record against a specific user | Store per-user opponent stats. |
 | **P3** | As a player | I want to play ranked against players of similar skill | Implement ranked queue and rank-based lobbies. |
