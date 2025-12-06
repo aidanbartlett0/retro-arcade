@@ -92,7 +92,7 @@ router.post('/join', (req,res) => {
             return res.status(403).json({ error: 'Lobby is full' });
         }
 
-        const playerId = req.session.account.username; // Using session ID for temporary player ID
+        const playerId = req.session.account.username; 
         
         // Prevent the same session from joining twice
         if (lobby.players.some(p => p.playerId === playerId)) {

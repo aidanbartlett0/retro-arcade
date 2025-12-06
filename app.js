@@ -269,7 +269,6 @@ async function saveMatchResult(lobby) {
 }
 
 
-// The main Authoritative Game Loop
 const gameLoop = setInterval(() => {
     const canvasWidth = 750;
     const canvasHeight = 585;
@@ -284,7 +283,6 @@ const gameLoop = setInterval(() => {
 
         const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1);
 
-        // More robust check: only run the loop if 2 players are present AND fully connected via WebSocket
         if (lobby.players.length < 2 || !arePlayersConnected) {
             continue;
         }
