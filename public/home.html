@@ -8,8 +8,14 @@
         <div class="top-bar">
             <button onclick="login()" id="login-btn" class="auth-button">Login</button>
             <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
-            <div id="user-info" class="user-info"></div>    
-        </div>
+            <div id="user-info" class="user-info"></div>  
+            <div class="change-username-topbar">
+                <input type="text" id="new-username" placeholder="New Username">
+                <button onclick="changeUsername()" class="auth-button">Change Username</button>
+                <div id="change-username-result" class="username-result-box"> </div> 
+            </div>
+                  
+        </div>        
         
         <div class="container">
             <h1>Retro Arcade Pong</h1>

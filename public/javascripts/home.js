@@ -370,6 +370,21 @@ async function load_matches(){
 
 }
 
+async function changeUsername() {
+    const newName = document.getElementById("new-username").value.trim();
+    const resultBox = document.getElementById("change-username-result");
+    
+    const response = await fetch("api/v1/users/changeUsername", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newName })
+    });
+  
+    const data = await response.json();
+    resultBox.innerText = data.message || data.error || "Done.";
+}
+  
+
 window.addEventListener('DOMContentLoaded', () => {
     userState();
     loadLeaderboard();

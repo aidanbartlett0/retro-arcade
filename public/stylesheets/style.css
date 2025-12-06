@@ -9,17 +9,67 @@ body {
   align-items: center; /* Center horizontally */
 }
 
-.top-bar {
+/* .top-bar {
   width: 100%;
   display: flex;
-  justify-content: flex-end; /* Align items to the right */
+  justify-content: flex-end; 
   align-items: center;
   padding: 10px 0;
-  gap: 10px; /* Space between items */
+  gap: 10px; 
+  position: absolute;
+  top: 0;
+  padding-right: 50px;
+} */
+.top-bar {margin-top: 5px;
+
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start; /* top-align items so the change section can stack */
+  gap: 10px;
   position: absolute;
   top: 0;
   padding-right: 50px;
 }
+
+.top-bar-buttons {
+  display: flex;
+  flex-direction: column; /* stack login/logout vertically if needed */
+  align-items: flex-end;
+}
+
+.change-username-topbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;  /* keep aligned with top-bar buttons */
+  width: 200px;           /* fixed width */
+  position: relative;     /* needed for absolute child */
+}
+
+.change-username-topbar input,
+.change-username-topbar button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.username-result-box {
+  position: absolute;   /* float below the input/button */
+  top: 100%;            /* start just below button */
+  left: 0;
+  width: 100%;
+  max-height: 200px;    /* optional: limit vertical size */
+  overflow-y: auto;     /* scroll if text is too long */
+  font-size: 0.9rem;
+  color: green;
+  background-color: #f8f8f8;
+  padding: 0.25rem;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  white-space: normal;  /* allow text to wrap to multiple lines */
+  z-index: 1000;        /* float above other elements */
+}
+
 
 .game-container {
   display: flex;

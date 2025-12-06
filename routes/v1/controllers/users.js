@@ -6,16 +6,20 @@ router.get('/whoami', async function(req, res, next){
   try{
     if(req.session.isAuthenticated){
       console.log('logged in')
-      const username = req.session.account.username
+      console.log('session account:', req.session.account)
+      if (!req.session.account.email) {
+        req.session.account.email = req.session.account.username;
+      }
+      const email = req.session.account.email;
       const name = req.session.account.name
       const [firstName, ...rest] = name.split(" ")
       const lastName = rest.join(" ")
-      let user = await req.models.User.findOne({ username: username })
+      let user = await req.models.User.findOne({email})
 
       if (!user) {
         user = await req.models.User.create({
-          username: username, 
-          email: username,
+          username: email.split("@")[0], 
+          email: email,
           firstName: firstName,
           lastName: lastName,
           matchHistory: [],
@@ -24,12 +28,13 @@ router.get('/whoami', async function(req, res, next){
         })
         console.log("CREATED NEW USER:", user.username)
       }
+      req.session.account.username = user.username
       req.session.mongoId = user._id;
   
         res.json({status: "loggedin", 
             userInfo: {
                name: name, 
-               username: username, 
+               username: user.username, 
                mongoId: user._id,
                isAuthenticated: req.session.isAuthenticated
             }
@@ -42,6 +47,49 @@ router.get('/whoami', async function(req, res, next){
     console.log(error)
   }
 })
+
+
+router.post('/changeUsername', async function (req, res) {
+  try {
+    if (!req.session.isAuthenticated) {
+      return res.status(401).json({
+        status: 'error',
+        error: 'You must be logged in to change your username'
+      });
+    }
+    const newName = req.body.username.trim();
+    const userId = req.session.mongoId;
+    if (!newName) {
+      return res.status(400).json({
+        status: 'error',
+        error: 'Username is required'
+      });
+    }
+    const valid = /^[A-Za-z0-9_]{5,15}$/.test(newName);
+    if (!valid) {
+      return res.status(400).json({
+        status: 'error',
+        error: 'Username may only contain letters, numbers, and underscores, and must be 5-10 characters long'
+      });
+    }
+    const user = await req.models.User.findOne({ _id: userId });
+    user.username = newName;
+    await user.save();
+    req.session.account.username = newName;
+    req.session.save();
+    return res.json({
+      status: 'success',
+      message: 'Username updated successfully',
+      username: newName
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: 'error',
+      error: 'Internal server error'
+    });
+  }
+});
 
 router.post('/friends/add', async function(req, res, next){
   try {
@@ -324,5 +372,7 @@ router.get('/leaderboard', async function(req, res, next){
     console.log(error);
   }
 })
+
+
 
 export default router;
