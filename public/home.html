@@ -8,8 +8,14 @@
         <div class="top-bar">
             <button onclick="login()" id="login-btn" class="auth-button">Login</button>
             <button onclick="logout()" id="logout-btn" class="auth-button" style="display: none;">Logout</button>
-            <div id="user-info" class="user-info"></div>    
-        </div>
+            <div id="user-info" class="user-info"></div>  
+            <div class="change-username-topbar">
+                <input type="text" id="new-username" placeholder="New Username">
+                <button onclick="changeUsername()" class="auth-button">Change Username</button>
+                <div id="change-username-result" class="username-result-box"> </div> 
+            </div>
+                  
+        </div>        
         
         <div class="container">
             <h1>Retro Arcade Pong</h1>
@@ -18,15 +24,45 @@
                 <button onclick="startGame()" class="menu-button" id="start-game-btn">Start Game</button>
                 <button onclick="viewFriends()" class="menu-button" id="friends-btn">Friends</button>
                 <button onclick="viewMatchHistory()" class="menu-button" id="match-history-btn">Match History</button>
-                <button onclick="MakeLobby()" class="menu-button" id ="make-lobby-btn">Create Lobby</button>
-    <button onclick="showJoinLobbyInput()" class="menu-button" id="join-lobby-btn">Join Lobby</button>
+                <div class="lobby-controls">
+
+                    <!-- Create Lobby + Public Checkbox -->
+                    <div class="create-public-wrapper">
+                        <button onclick="MakeLobby()" class="menu-button create-btn" id="make-lobby-btn">Create Lobby</button>
+
+                        <label class="public-checkbox">
+                            <input type="checkbox" id="public-lobby-checkbox">
+                            <span>Public</span>
+                        </label>
+                    </div>
+
+                    <!-- Join Lobby + Show/Hide Public Lobbies -->
+                    <div class="join-public-wrapper">
+                        <button onclick="showJoinLobbyInput()" class="menu-button join-btn" id="join-lobby-btn">Join Lobby</button>
+                        <button onclick="togglePublicLobbies()" class="menu-button toggle-public-btn" id="toggle-public-btn">Show Public Lobbies</button>
+                    </div>
+
+                    <!-- PIN input box -->
+                    <div id="pinInputContainer" style="display: none;">
+                        <input type="text" id="pinInput" placeholder="Enter PIN" maxlength="6" class="pin-input-field">
+                        <button onclick="submitJoinLobbyPin()" class="menu-button small-btn">Submit PIN</button>
+                        <button onclick="hideJoinLobbyInput()" class="menu-button small-btn cancel-btn">Cancel</button>
+                    </div>
+
+                </div>
+
+                <!-- PUBLIC LOBBIES LIST -->
+                <div class="public-lobbies-section" id="public-lobbies-section" style="display: none;">
+                    <h2>Public Lobbies</h2>
+                    <div id="public-lobbies-container"></div>
+                </div>
     
-    <div id="pinInputContainer" style="display: none;">
-        <input type="text" id="pinInput" placeholder="Enter PIN" maxlength="6" class="pin-input-field">
-        <button onclick="submitJoinLobbyPin()" class="menu-button">Submit PIN</button>
-        <button onclick="hideJoinLobbyInput()" class="menu-button" style="background: #555;">Cancel</button>
-    </div>
             </nav>
+    
+            <div class="home-leaderboard-section">
+                <h2>Global Leaderboard</h2>
+                <div id="home-leaderboard-container" class="home-leaderboard-list"></div>
+            </div>
     
             <div class="footer">
                 <p>Classic Pong Game</p>

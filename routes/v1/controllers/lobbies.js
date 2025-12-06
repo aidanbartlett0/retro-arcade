@@ -1,9 +1,19 @@
 import express from 'express'
 import crypto from 'crypto'
-import { activeLobbies, pinToLobbyMap } from '../../../app.js'
+import { activeLobbies, publicLobbies, pinToLobbyMap } from '../../../app.js'
 
 var router = express.Router();
 
+
+router.get('/public', (req, res) => {
+    const publicLobbyList = Object.values(publicLobbies).map(lobby => ({
+        host: lobby.players[0]?.playerId || 'Unknown',
+        lobbyId: lobby.lobbyId,
+        pin: lobby.pin,
+        playerCount: lobby.players.length
+    }));
+    res.status(200).json(publicLobbyList);
+});
 
 router.post('/create', (req,res) => {
 
@@ -17,7 +27,7 @@ router.post('/create', (req,res) => {
         } while (pinToLobbyMap[pin]);
 
         pinToLobbyMap[pin] = lobbyId;
-
+        const isPublic = req.body.isPublic || false;
         // Define the full initial state of the game
         const canvasWidth = 750;
         const canvasHeight = 585;
@@ -27,6 +37,7 @@ router.post('/create', (req,res) => {
         activeLobbies[lobbyId] = {
             lobbyId: lobbyId,
             pin: pin,
+            lastActivity: Date.now(),
             players: [{ playerId: playerId, ws: null, paddle: 'left' }],
             gameState: {
                 leftPaddle: {
@@ -62,6 +73,9 @@ router.post('/create', (req,res) => {
                 }
             }
         };
+        if (isPublic) {
+            publicLobbies[lobbyId] = activeLobbies[lobbyId]; // Add to public lobbies
+        }
  
         console.log(`Lobby created: ID=${lobbyId}, PIN=${pin}`);
  

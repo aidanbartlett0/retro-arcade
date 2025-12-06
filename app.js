@@ -14,6 +14,7 @@ dotenv.config({ path: '.env.dev' });
 
 // Active games storage
 export const activeLobbies = {};
+export const publicLobbies = {};
 export const pinToLobbyMap = {};
 
 const authConfig = {
@@ -22,6 +23,7 @@ const authConfig = {
         authority: process.env.CLOUD_INSTANCE + process.env.TENANT_ID,
         clientSecret: process.env.CLIENT_SECRET,
         redirectUri: "/redirect"
+        // redirectUri: "https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azurewebsites.net/redirect"
     },
 	system: {
     	loggerOptions: {
@@ -128,6 +130,7 @@ wss.on('connection', (ws, request) => {
                 case 'joinGame': 
                     const lobby = activeLobbies[data.lobbyId];
                     if (lobby) {
+                        lobby.lastActivity = Date.now();
                         const player = lobby.players.find(p => p.playerId === ws.playerId);
                         if (player) {
                             player.ws = ws; 
@@ -139,15 +142,33 @@ wss.on('connection', (ws, request) => {
                         // Check if the lobby is now full and ready to start
                         const isLobbyFull = lobby.players.length === 2;
                         const arePlayersConnected = lobby.players.every(p => p.ws && p.ws.readyState === 1); 
+                        if (isLobbyFull) {
+                            delete publicLobbies[lobby.lobbyId]; // Remove from public lobbies
+                        }
 
                         if (isLobbyFull && arePlayersConnected) {
-                            // Ensure the game state is marked as playing
-                            lobby.gameState.gameplay.is_playing = true;
                             console.log(`Lobby ${lobby.lobbyId} is full and all players connected. Starting game.`);
                             // Notify both players that the game is starting
+                            const leftPlayer = lobby.players.find(p => p.paddle === "left");
+                            const rightPlayer = lobby.players.find(p => p.paddle === "right");
                             lobby.players.forEach(p => {
-                                p.ws.send(JSON.stringify({ type: 'gameStart' }));
+                                p.ws.send(JSON.stringify({
+                                    type: "countdown",
+                                    seconds: 5,
+                                    leftPlayer: leftPlayer.playerId ,
+                                    rightPlayer: rightPlayer.playerId 
+                                }));
                             });
+                            setTimeout(() => {
+                                // Ensure the game state is marked as playing
+                                lobby.gameState.gameplay.is_playing = true;
+                                // state.gameplay.time_left = 60
+                                lobby.players.forEach(p => {
+                                    p.ws.send(JSON.stringify({ type: "gameStart" }));
+                                });
+                            }, 5000);
+                                                                                        
+
                         } else {
                             console.log(`Lobby ${lobby.lobbyId} is waiting for players. Current count: ${lobby.players.length}. Connected: ${lobby.players.filter(p => p.ws && p.ws.readyState === 1).length}`);
                         }
@@ -189,7 +210,18 @@ wss.on('connection', (ws, request) => {
         for (const lobbyId in activeLobbies) {
             const lobby = activeLobbies[lobbyId];
             const player = lobby.players.find(p => p.playerId === ws.playerId);
-
+            const playerIndex = lobby.players.findIndex(p => p.playerId === ws.playerId);
+            if (playerIndex !== -1) {
+                console.log(`Removing player ${ws.playerId} from lobby ${lobbyId}.`);
+                lobby.players.splice(playerIndex, 1); // remove from array
+    
+                if (lobby.players.length === 0) {
+                    delete activeLobbies[lobbyId];
+                    delete publicLobbies[lobbyId]; // remove from public if applicable
+                    console.log(`Lobby ${lobbyId} deleted because it is empty.`);
+                }
+                break
+            }
             if (player) {
                 console.log(`Marking player ${ws.playerId} as disconnected in lobby ${lobbyId}.`);
                 player.ws = null; 
@@ -268,6 +300,22 @@ async function saveMatchResult(lobby) {
     }
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+async function countdown(n, started = false) {
+const timer = document.getElementById('match-timer');
+for (let i = n; i > 0; i--) {
+    timer.innerText = i;
+    await sleep(1000);
+}
+if(!started){
+    timer.innerText = 'PLAY';
+    await sleep(1000);
+}
+}
+  
 
 const gameLoop = setInterval(() => {
     const canvasWidth = 750;
@@ -338,11 +386,11 @@ const gameLoop = setInterval(() => {
             
             state.ball.dx *= -1; // Serve to the other player
         
-        if (state.score.player1 >= 5) {
+        if (state.score.player1 >= 3) {
             state.gameplay.is_playing = false;
             state.gameplay.winning_player = lobby.players[0].playerId
             saveMatchResult(lobby);
-         } else if (state.score.player2 >= 5) {
+         } else if (state.score.player2 >= 3) {
             state.gameplay.is_playing = false;
             state.gameplay.winning_player = lobby.players[1].playerId
             saveMatchResult(lobby);

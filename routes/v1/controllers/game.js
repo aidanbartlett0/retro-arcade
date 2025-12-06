@@ -12,7 +12,7 @@ router.post('/start', async function(req, res, next){
                 players: { left: 'eviluser', right: req.session.account.username }
             }
             console.log(req.session.game)
-            return res.status(200).json({status: 'game started'})
+            return res.status(200).json({status: 'game started', players: req.session.game.players})
         }else {
             return res.status(401).json({status: 'loggedout', userInfo: 'There is no user for this session'})
         }
@@ -37,13 +37,23 @@ router.post('/stop', async function(req, res, next){
             
             let winner = null;
             let winner_username;
+            let loser = null;
+            let winnerScore = 0;
+            let loserScore = 0;
+            
             if (leftScore > rightScore){
                 winner = leftUser._id
                 winner_username = leftUser.username
+                loser = rightUser._id
+                winnerScore = leftScore;
+                loserScore = rightScore;
             }
             else if (rightScore > leftScore){
                 winner = rightUser._id;
                 winner_username = rightUser.username
+                loser = leftUser._id;
+                winnerScore = rightScore;
+                loserScore = leftScore;
             }
 
             const matchDoc = new req.models.Match({
@@ -55,6 +65,35 @@ router.post('/stop', async function(req, res, next){
             });
             leftUser.matchHistory.push(matchDoc._id);
             rightUser.matchHistory.push(matchDoc._id);
+            
+            if (winner) {
+                const scoreDifferential = winnerScore - loserScore;
+                // Rank change = score differential (larger differential = more rank)
+                // If differential is 0 (shouldn't happen with a winner), default to 1
+                const rankChange = scoreDifferential > 0 ? scoreDifferential : 1;
+                
+                // Get the winner and loser user objects
+                const winnerUser = winner.equals(leftUser._id) ? leftUser : rightUser;
+                const loserUser = loser.equals(leftUser._id) ? leftUser : rightUser;
+                
+                // Initialize rank if undefined
+                if (winnerUser.rank === undefined || winnerUser.rank === null) {
+                    winnerUser.rank = 0;
+                }
+                if (loserUser.rank === undefined || loserUser.rank === null) {
+                    loserUser.rank = 0;
+                }
+                
+                // Winner gains rank, loser loses rank (same amount)
+                winnerUser.rank += rankChange;
+                loserUser.rank -= rankChange;
+                
+                // Ensure rank doesn't go below 0
+                if (loserUser.rank < 0) {
+                    loserUser.rank = 0;
+                }
+            }
+            
             await leftUser.save();
             await rightUser.save();
         

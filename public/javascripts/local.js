@@ -204,7 +204,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function countdown(n, started = false) {
+async function countdown(n, started = false, ending = false) {
   const timer = document.getElementById('match-timer');
   for (let i = n; i > 0; i--) {
       timer.innerText = i;
@@ -214,6 +214,9 @@ async function countdown(n, started = false) {
     timer.innerText = 'PLAY';
     await sleep(1000);
   }
+  if (ending){
+    timer.innerText = 'Returning to home...';
+  }
 }
 
 
@@ -222,25 +225,24 @@ async function init(){
   let session_start = await fetch('api/v1/game/start', {
       method: "POST"
   })
+  let data = await session_start.json();
+  console.log('response data:', data);
+
+  console.log(session_start)
   if (session_start.status == 401) {
     alert('not logged in, cannot start game')
   } else {
+    let rightName = document.getElementById('player-right-name')
+    let leftName = document.getElementById('player-left-name')
+    rightName.innerText = data.players.right
+    leftName.innerText = data.players.left
+
     console.log('game started')
     await updateScore()
     await countdown(5, false)
-    requestAnimationFrame(loop);
-    await countdown(6, true)
-    const stop = await fetch('/api/v1/game/stop', { method: "POST" });
-    const result = await stop.json();
     const timer = document.getElementById('match-timer');
-  
-    if (result.status === 'game tied') {
-      timer.innerText = "SUDDEN DEATH"
-      sudden_death = true
-    } else {
-      timer.innerText = "WINNER: " + result.winner
-      isPlaying = false
-    }
+    timer.innerText = 'First to 3, have fun!'
+    requestAnimationFrame(loop);
   }
 }
 
@@ -265,13 +267,6 @@ async function score(paddle_side){
       body: JSON.stringify({ paddle_side })
     })
     await updateScore()
-    if (sudden_death) {
-      isPlaying = false
-      const stop = await fetch('/api/v1/game/stop', { method: "POST" });
-      const result = await stop.json();
-      const timer = document.getElementById('match-timer');
-      timer.innerText = "WINNER: " + result.winner;
-    }
   }catch(error){
     console.log(error)
   }
@@ -283,14 +278,19 @@ async function updateScore(){
       method: "GET"
     })
     let scores = await responseJson.json();
-    // console.log(scores);
-    // console.log(scores['left'])
-    // console.log(scores.left)
     let rightScore = document.getElementById('player-right-score')
     let leftScore = document.getElementById('player-left-score')
     rightScore.innerText = scores.right
     leftScore.innerText = scores.left
-
+    if (scores.left == 3 || scores.right == 3) {
+      isPlaying = false
+      const stop = await fetch('/api/v1/game/stop', { method: "POST" });
+      const result = await stop.json();
+      const timer = document.getElementById('match-timer');
+      timer.innerText = "WINNER: " + result.winner
+      await countdown(2, ending = true)
+      window.location = "/home.html";
+    }
   }catch(error){
     console.log(error)
   }

@@ -25,24 +25,29 @@ Deployed web app: [https://retro-arcade-g6fnhabshze3ejeg.northcentralus-01.azure
 ---
 
 ## User Stories
-
+### Implemented:
 | Priority | User | Description | Technical Implementation |
 |---------|------|-------------|---------------------------|
 | **P0** | As a player | I want to go to the website and start a new game | Publish the web app and implement create-game functionality. |
 | **P0** | As a player | I want to press arrow keys to move my paddle | Implement paddle movement + UI state. |
 | **P0** | As a player | I want to see the ball bounce and hit my paddle | Implement ball movement + collision logic. |
 | **P0** | As a player | I want score tracking and win/loss behavior | Implement game logic + static “bot” opponent. |
-| **P1** | As a player | I want to log in and customize my username | Set up Azure Authentication and Users table. |
 | **P1** | As a player | I want to see my game history | Create Games table and update on match end. |
 | **P2** | As a player | I want to add friends | Implement POST/GET endpoints for friend list. |
-| **P2** | As a player | I want to play against the bot at the same time as my friend | Implement sessions for simultaneous players. |
+| **P2** | As a player | I want to remove friends | Implement POST/GET endpoints for friend list. |
+| **P2** | As a player | I want to play against the eviluser (LAN) at the same time as my friend does on their computer| Implement sessions for simultaneous players. |
 | **P2** | As a player | I want private lobbies to play with friends | Implement lobby logic + websockets. |
 | **P2** | As a player | I want to earn ranking points | Add rank score field + update ranking logic. |
+| **P3** | As a player | I want to join or start public lobbies | Implement lobby table and public lobby logic. |
+
+### Unimplemented:
+| Priority | User | Description | Technical Implementation |
+|---------|------|-------------|---------------------------|
+| **P1** | As a player | I want to log in and customize my username | Set up Azure Authentication and Users table. |
 | **P2** | As a player | I want to rematch after game ends | Keep session active; allow rematching. |
 | **P3** | As a player | I want to see my match record against a specific user | Store per-user opponent stats. |
-| **P3** | As a player | I want to join or start public lobbies | Implement lobby table and public lobby logic. |
 | **P3** | As a player | I want to play ranked against players of similar skill | Implement ranked queue and rank-based lobbies. |
-| **P3** | As a player | I want tournaments | Implement tournament structuring across multiple lobbies. |
+| **P3** | As a player | I want to play in a tournament | Implement tournament structuring across multiple lobbies. |
 
 ---
 

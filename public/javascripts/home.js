@@ -49,11 +49,76 @@ async function submitJoinLobbyPin() {
     }
 }
 
+function togglePublicLobbies() {
+    const publicSection = document.getElementById('public-lobbies-section');
+    const toggleBtn = document.getElementById('toggle-public-btn');
+
+    if (publicSection.style.display === 'none') {
+        publicSection.style.display = 'block';
+        toggleBtn.innerText = 'Hide Public Lobbies';
+    } else {
+        publicSection.style.display = 'none';
+        toggleBtn.innerText = 'Show Public Lobbies';
+    }
+}
+async function loadPublicLobbies() {
+    try {
+        const response = await fetch('/api/v1/lobbies/public');
+        const publicLobbies = await response.json();
+
+        const container = document.getElementById('public-lobbies-container');
+        if (publicLobbies.length === 0) {
+            container.innerHTML = '<p>No public lobbies available.</p>';
+            return;
+        }
+        
+        container.innerHTML = publicLobbies.map(lobby => `
+            <div class="public-lobby-card">
+                <div>
+                    <p><strong>Lobby Host:</strong> ${lobby.host}</p>
+                    <p><strong>Players:</strong> ${lobby.playerCount}/2</p>
+                </div>
+                <button onclick="joinPublicLobby('${lobby.pin}')">Join</button>
+            </div>
+        `).join('');
+        
+        } catch (error) {
+        console.error('Error loading public lobbies:', error);
+    }
+}
+
+async function joinPublicLobby(pin) {
+    try {
+        const response = await fetch('/api/v1/lobbies/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+
+        if (!response.ok) {
+            alert('Failed to join lobby.');
+            return;
+        }
+
+        const lobbyInfo = await response.json();
+        window.location.href = `/index.html?lobbyId=${lobbyInfo.lobbyId}`;
+    } catch (error) {
+        console.error('Error joining public lobby:', error);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadPublicLobbies();
+});
+
 
 async function MakeLobby() {
     try {
+        const isPublic = document.getElementById('public-lobby-checkbox').checked;
         const createLobbyResponse = await fetch('/api/v1/lobbies/create', {
-            method: "POST"
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isPublic })
         });
 
         if (!createLobbyResponse.ok) {
@@ -128,6 +193,61 @@ async function viewMatchHistory() {
     }
     else{
         alert('You must log in first!')
+    }
+}
+
+async function loadLeaderboard(){
+    try{
+        const response = await fetch('/api/v1/users/leaderboard');
+        const leaderboardJson = await response.json();
+        console.log('Leaderboard:', leaderboardJson);
+        
+        let leaderboardContainer = document.getElementById('home-leaderboard-container');
+        
+        if (leaderboardJson.leaderboard && leaderboardJson.leaderboard.length > 0) {
+            let currentUsername = null;
+            try {
+                const userResponse = await fetch('/api/v1/users/whoami');
+                const userJson = await userResponse.json();
+                if (userJson.status === 'loggedin') {
+                    currentUsername = userJson.userInfo.username;
+                }
+            } catch (error) {
+                console.log('Could not fetch current user info');
+            }
+            
+
+            const topPlayers = leaderboardJson.leaderboard.slice(0, 10);
+            
+            leaderboardContainer.innerHTML = `
+                <div class="home-leaderboard-header">
+                    <div class="home-leaderboard-header-item">Rank</div>
+                    <div class="home-leaderboard-header-item">Username</div>
+                    <div class="home-leaderboard-header-item">Score</div>
+                </div>
+                ${topPlayers.map(entry => {
+                    const isCurrentUser = currentUsername && entry.username === currentUsername;
+                    const rankClass = entry.rank === 1 ? 'rank-gold' : entry.rank === 2 ? 'rank-silver' : entry.rank === 3 ? 'rank-bronze' : '';
+                    const userClass = isCurrentUser ? 'current-user-entry' : '';
+                    
+                    return `
+                        <div class="home-leaderboard-entry ${rankClass} ${userClass}">
+                            <div class="home-leaderboard-rank">
+                                ${entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
+                            </div>
+                            <div class="home-leaderboard-username">${entry.username}</div>
+                            <div class="home-leaderboard-score">${entry.score.toFixed(2)}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        } else {
+            leaderboardContainer.innerHTML = '<div class="no-leaderboard">No rankings yet. Play games to see the leaderboard!</div>';
+        }
+    } catch(error){
+        let leaderboardContainer = document.getElementById('home-leaderboard-container');
+        leaderboardContainer.innerHTML = '<div class="no-leaderboard">Unable to load leaderboard. Please try again later.</div>';
+        console.log({error: error});
     }
 }
 
@@ -250,8 +370,24 @@ async function load_matches(){
 
 }
 
+async function changeUsername() {
+    const newName = document.getElementById("new-username").value.trim();
+    const resultBox = document.getElementById("change-username-result");
+    
+    const response = await fetch("api/v1/users/changeUsername", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newName })
+    });
+  
+    const data = await response.json();
+    resultBox.innerText = data.message || data.error || "Done.";
+}
+  
+
 window.addEventListener('DOMContentLoaded', () => {
     userState();
+    loadLeaderboard();
 });
 
 
