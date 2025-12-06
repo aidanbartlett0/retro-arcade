@@ -72,6 +72,14 @@ router.post('/changeUsername', async function (req, res) {
         error: 'Username may only contain letters, numbers, and underscores, and must be 5-10 characters long'
       });
     }
+    const existingUser = await req.models.User.findOne({ username: newName });
+    if (existingUser) {
+      return res.status(400).json({
+        status: 'error',
+        error: 'Username is already taken'
+      });
+    }
+
     const user = await req.models.User.findOne({ _id: userId });
     user.username = newName;
     await user.save();
