@@ -68,15 +68,11 @@ router.post('/stop', async function(req, res, next){
             
             if (winner) {
                 const scoreDifferential = winnerScore - loserScore;
-                // Rank change = score differential (larger differential = more rank)
-                // If differential is 0 (shouldn't happen with a winner), default to 1
                 const rankChange = scoreDifferential > 0 ? scoreDifferential : 1;
                 
-                // Get the winner and loser user objects
                 const winnerUser = winner.equals(leftUser._id) ? leftUser : rightUser;
                 const loserUser = loser.equals(leftUser._id) ? leftUser : rightUser;
                 
-                // Initialize rank if undefined
                 if (winnerUser.rank === undefined || winnerUser.rank === null) {
                     winnerUser.rank = 0;
                 }
@@ -84,11 +80,9 @@ router.post('/stop', async function(req, res, next){
                     loserUser.rank = 0;
                 }
                 
-                // Winner gains rank, loser loses rank (same amount)
                 winnerUser.rank += rankChange;
                 loserUser.rank -= rankChange;
                 
-                // Ensure rank doesn't go below 0
                 if (loserUser.rank < 0) {
                     loserUser.rank = 0;
                 }
